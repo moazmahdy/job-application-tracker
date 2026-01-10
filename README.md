@@ -179,9 +179,129 @@ src/main/resources/
 
 (Coming soon: Unit tests and integration tests)
 
-## 🐳 Docker Support
+## 🐳 Docker Deployment
 
-(Coming soon: Docker and docker-compose setup)
+### Prerequisites
+- Docker Desktop installed
+- Docker Compose installed
+
+### Quick Start with Docker
+
+The easiest way to run this project is using Docker Compose, which automatically sets up both the application and PostgreSQL database.
+
+#### 1. Clone the repository
+```bash
+git clone https://github.com/moazmahdy/job-application-tracker.git
+cd job-application-tracker
+```
+
+#### 2. Start with Docker Compose
+```bash
+docker-compose up --build
+```
+
+This command will:
+- Build the Spring Boot application
+- Pull and start PostgreSQL 18
+- Run Flyway migrations automatically
+- Start the application on port 8081
+
+#### 3. Access the application
+
+- **API Base URL**: http://localhost:8081
+- **Swagger UI**: http://localhost:8081/swagger-ui/index.html
+- **API Docs (JSON)**: http://localhost:8081/v3/api-docs
+
+### Docker Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `docker-compose up` | Start all services |
+| `docker-compose up -d` | Start in detached mode (background) |
+| `docker-compose up --build` | Rebuild and start |
+| `docker-compose down` | Stop all services |
+| `docker-compose down -v` | Stop and remove volumes (clears database) |
+| `docker-compose logs -f` | View logs in real-time |
+| `docker-compose logs -f app` | View app logs only |
+| `docker-compose ps` | List running containers |
+
+### What's Included in Docker Setup
+
+- **PostgreSQL 18**: Database server with persistent volume storage
+- **Spring Boot Application**: Auto-configured with database connection
+- **Flyway Migrations**: Automatic database schema initialization
+- **Health Checks**: Ensures database is ready before app starts
+- **Isolated Network**: Containers communicate securely on internal network
+- **Multi-stage Build**: Optimized Docker image size
+
+### Container Architecture
+```
+┌─────────────────────┐
+│   Docker Network    │
+│                     │
+│  ┌──────────────┐   │
+│  │   App (8080) │   │
+│  └──────┬───────┘   │
+│         │           │
+│  ┌──────▼───────┐   │
+│  │ PostgreSQL   │   │
+│  │   (5433)     │   │
+│  └──────────────┘   │
+└─────────────────────┘
+```
+
+### Environment Variables
+
+The following environment variables are configured in `docker-compose.yml`:
+
+**Database:**
+- `POSTGRES_DB`: job_tracker_db
+- `POSTGRES_USER`: postgres
+- `POSTGRES_PASSWORD`: postgres123
+
+**Application:**
+- `SPRING_DATASOURCE_URL`: jdbc:postgresql://postgres:5432/job_tracker_db
+- `JWT_SECRET`: Configured for Docker environment
+- `JWT_EXPIRATION`: 86400000 (24 hours)
+
+You can modify these in `docker-compose.yml` before running.
+
+### Ports
+
+- **Application**: 8081 (external) → 8080 (internal)
+- **PostgreSQL**: 5433 (external) → 5432 (internal)
+
+*Note: Different external ports prevent conflicts with locally installed services.*
+
+### Troubleshooting
+
+**Port already in use?**
+```bash
+# Change ports in docker-compose.yml
+ports:
+  - "8082:8080"  # Use different external port
+```
+
+**Database connection failed?**
+```bash
+# Check if PostgreSQL container is healthy
+docker-compose ps
+
+# View database logs
+docker-compose logs postgres
+```
+
+**Application won't start?**
+```bash
+# View application logs
+docker-compose logs app
+
+# Rebuild from scratch
+docker-compose down -v
+docker-compose up --build
+```
+
+---
 
 ## 📝 API Documentation
 
