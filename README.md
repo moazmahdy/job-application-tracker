@@ -105,7 +105,7 @@ The application will start on `http://localhost:8080`
 
 ## 🔐 Authentication
 
-All endpoints except `/api/auth/*` require JWT token in the Authorization header:
+All endpoints except `/api/job_tracker/*` require JWT token in the Authorization header:
 ```
 Authorization: Bearer YOUR_JWT_TOKEN
 ```
@@ -185,7 +185,26 @@ src/main/resources/
 
 ## 📝 API Documentation
 
-(Coming soon: Swagger/OpenAPI documentation)
+Interactive API documentation is available via Swagger UI:
+
+**Local:**
+```
+http://localhost:8080/api/job_tracker/swagger-ui/index.html
+```
+
+**Features:**
+- Interactive API testing
+- JWT authentication support
+- Request/Response examples
+- Schema definitions
+
+### How to use:
+1. Start the application
+2. Navigate to the Swagger UI URL
+3. Click "Authorize" button
+4. Login via `/auth/login` endpoint and copy the token
+5. Paste token in the authorization dialog
+6. Try out any protected endpoint
 
 ## 🤝 Contributing
 

@@ -5,6 +5,11 @@ import com.elzozcode.job_tracker.dtos.response.JobApplicationResponse;
 import com.elzozcode.job_tracker.entity.User;
 import com.elzozcode.job_tracker.repositories.AuthRepository;
 import com.elzozcode.job_tracker.srvices.JobApplicationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,11 +23,18 @@ import java.util.List;
 @RestController
 @RequestMapping("/job_application")
 @RequiredArgsConstructor
+@Tag(name = "Job Applications", description = "Manage job applications")
+@SecurityRequirement(name = "Bearer Authentication")
 public class JobApplicationController {
 
     private final JobApplicationService service;
     private final AuthRepository userRepository;
 
+    @Operation(summary = "Create job application", description = "Add a new job application")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Job application created"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @PostMapping
     public ResponseEntity<JobApplicationResponse> createJobApplication(
             @Valid @RequestBody JobApplicationDto request
@@ -31,12 +43,14 @@ public class JobApplicationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @Operation(summary = "Get all job applications", description = "Get all job applications for current user")
     @GetMapping
     public ResponseEntity<List<JobApplicationResponse>> getAllJobApplicationByUserId() {
         List<JobApplicationResponse> responses = service.getAllByUserId(getCurrentUser());
         return ResponseEntity.ok(responses);
     }
 
+    @Operation(summary = "Get job application by ID")
     @GetMapping("/{id}")
     public ResponseEntity<JobApplicationResponse> getApplicationById(
             @PathVariable long id
@@ -45,6 +59,7 @@ public class JobApplicationController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Update job application")
     @PutMapping("/{id}")
     public ResponseEntity<JobApplicationResponse> update(
             @PathVariable long id,
@@ -54,6 +69,7 @@ public class JobApplicationController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Delete job application")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteApplication(
             @PathVariable long id
