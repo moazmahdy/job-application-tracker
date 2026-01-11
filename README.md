@@ -177,7 +177,72 @@ src/main/resources/
 
 ## 🧪 Testing
 
-(Coming soon: Unit tests and integration tests)
+Comprehensive test suite with 100+ test cases covering unit tests, integration tests, and repository tests.
+
+### Test Suite Overview
+
+- **Unit Tests (3 service classes)**: 21 test cases with mocked dependencies
+- **Integration Tests (3 controller classes)**: 24 test cases with real Spring context
+- **Repository Tests (3 repository classes)**: 32 test cases with H2 in-memory database
+- **Total Test Cases**: 77+ comprehensive tests
+
+### Running Tests
+
+```bash
+# Run all tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=AuthServiceTest
+
+# Run specific test method
+mvn test -Dtest=AuthServiceTest#testRegisterSuccess
+
+# Run with coverage report
+mvn test jacoco:report
+```
+
+### Test Coverage
+
+**Unit Tests (Services)**
+- AuthService: Register, Login, Duplicate validation, Invalid credentials
+- JobApplicationService: CRUD operations, User isolation, Error handling
+- InterviewServices: CRUD operations, Authorization checks, Relationship management
+
+**Integration Tests (Controllers)**
+- Authentication endpoints (Register/Login)
+- Job Application endpoints (Create, Read, Update, Delete)
+- Interview endpoints (Create, Read, Update, Delete)
+- HTTP status codes and error handling
+- Request validation
+
+**Repository Tests (Data Layer)**
+- CRUD operations for all entities
+- Query methods and filters
+- Constraint validation
+- Relationship integrity
+- Edge cases and error scenarios
+
+### Test Technologies
+
+- **JUnit 5**: Modern testing framework
+- **Mockito**: Mocking framework for unit tests
+- **Spring Boot Test**: Integration testing support
+- **MockMvc**: HTTP layer testing
+- **H2 Database**: In-memory test database
+- **AssertJ**: Fluent assertions (via spring-boot-starter-test)
+
+### Test Best Practices
+
+- ✅ AAA Pattern (Arrange-Act-Assert)
+- ✅ Descriptive test names with @DisplayName
+- ✅ Proper test isolation and independence
+- ✅ Mocking external dependencies
+- ✅ Testing both happy path and error cases
+- ✅ Unique test data using timestamps
+- ✅ Complete test documentation
+
+For detailed testing information, see [TESTING.md](TESTING.md).
 
 ## 🐳 Docker Deployment
 
