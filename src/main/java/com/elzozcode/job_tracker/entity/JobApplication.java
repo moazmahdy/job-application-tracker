@@ -29,6 +29,10 @@ public class JobApplication {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_id", nullable = false)
+    private Job job;
+
     @Column(name = "company_name", nullable = false, length = 100)
     private String companyName;
 

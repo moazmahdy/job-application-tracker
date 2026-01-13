@@ -1,21 +1,55 @@
 package com.elzozcode.job_tracker.srvices;
 
+import com.elzozcode.job_tracker.dtos.CreateJobApplicationDto;
 import com.elzozcode.job_tracker.dtos.JobApplicationDto;
 import com.elzozcode.job_tracker.dtos.response.JobApplicationResponse;
 import com.elzozcode.job_tracker.entity.JobApplication;
 import com.elzozcode.job_tracker.entity.User;
+import com.elzozcode.job_tracker.entity.Job;
 import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
 import com.elzozcode.job_tracker.repositories.JobApplicationRepository;
+import com.elzozcode.job_tracker.repositories.JobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class JobApplicationService {
 
     private final JobApplicationRepository jobApplicationRepository;
+    private final JobRepository jobRepository;
+
+    /**
+     * Create application from a posted job
+     */
+    public JobApplicationResponse createApplicationFromJob(CreateJobApplicationDto request, User currentUser) {
+        Job job = jobRepository.findById(request.getJobId())
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + request.getJobId()));
+
+        JobApplication jobApplication = JobApplication.builder()
+                .user(currentUser)
+                .job(job)
+                .companyName(job.getCompany().getName())
+                .jobTitle(job.getJobTitle())
+                .jobUrl(job.getJobUrl())
+                .applicationDate(LocalDate.now())
+                .status(request.getStatus() != null ? request.getStatus() : job.getJobTitle() != null ? null : null)
+                .location(job.getLocation())
+                .jobType(job.getJobType())
+                .workMode(job.getWorkMode())
+                .notes(request.getNotes())
+                .contactPerson(request.getContactPerson())
+                .contactEmail(request.getContactEmail())
+                .build();
+
+        JobApplication saved = jobApplicationRepository.save(jobApplication);
+        return mapToResponse(saved);
+    }
 
     public JobApplicationResponse createJobApplication(JobApplicationDto request, User currentUser) {
         JobApplication jobApplication =
@@ -114,3 +148,5 @@ public class JobApplicationService {
                 .build();
     }
 }
+
+

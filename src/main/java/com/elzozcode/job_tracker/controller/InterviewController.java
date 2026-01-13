@@ -1,6 +1,7 @@
 package com.elzozcode.job_tracker.controller;
 
 import com.elzozcode.job_tracker.dtos.InterviewDto;
+import com.elzozcode.job_tracker.dtos.ScheduleInterviewDto;
 import com.elzozcode.job_tracker.dtos.response.InterviewResponse;
 import com.elzozcode.job_tracker.entity.User;
 import com.elzozcode.job_tracker.repositories.AuthRepository;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/interviews")
+@RequestMapping("/api/interviews")
 @RequiredArgsConstructor
 @Tag(name = "Interviews", description = "Manage interview schedules")
 @SecurityRequirement(name = "Bearer Authentication")
@@ -28,7 +29,16 @@ public class InterviewController {
     private final InterviewServices interviewServices;
     private final AuthRepository userRepository;
 
-    @Operation(summary = "Schedule interview", description = "Create a new interview for a job application")
+    @Operation(summary = "Schedule new interview", description = "Schedule a new interview with detailed information")
+    @PostMapping("/schedule")
+    public ResponseEntity<InterviewResponse> scheduleInterview(
+            @Valid @RequestBody ScheduleInterviewDto request
+    ) {
+        InterviewResponse response = interviewServices.scheduleInterview(request, getCurrentUser());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Create interview", description = "Create a new interview for a job application")
     @PostMapping
     public ResponseEntity<InterviewResponse> createInterview(
             @Valid @RequestBody InterviewDto request
@@ -41,6 +51,20 @@ public class InterviewController {
     @GetMapping
     public ResponseEntity<List<InterviewResponse>> getAllByUserId() {
         List<InterviewResponse> responses = interviewServices.getAllByUserId(getCurrentUser());
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(summary = "Get upcoming interviews", description = "Get all upcoming interviews for current user")
+    @GetMapping("/upcoming")
+    public ResponseEntity<List<InterviewResponse>> getUpcomingInterviews() {
+        List<InterviewResponse> responses = interviewServices.getUpcomingInterviews(getCurrentUser());
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(summary = "Get completed interviews", description = "Get all completed interviews for current user")
+    @GetMapping("/completed")
+    public ResponseEntity<List<InterviewResponse>> getCompletedInterviews() {
+        List<InterviewResponse> responses = interviewServices.getCompletedInterviews(getCurrentUser());
         return ResponseEntity.ok(responses);
     }
 

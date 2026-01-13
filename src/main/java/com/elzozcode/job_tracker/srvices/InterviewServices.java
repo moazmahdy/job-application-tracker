@@ -1,26 +1,51 @@
 package com.elzozcode.job_tracker.srvices;
 
 import com.elzozcode.job_tracker.dtos.InterviewDto;
+import com.elzozcode.job_tracker.dtos.ScheduleInterviewDto;
 import com.elzozcode.job_tracker.dtos.response.InterviewResponse;
 import com.elzozcode.job_tracker.entity.Interview;
 import com.elzozcode.job_tracker.entity.JobApplication;
 import com.elzozcode.job_tracker.entity.User;
+import com.elzozcode.job_tracker.entity.enums.InterviewStatus;
 import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
 import com.elzozcode.job_tracker.exception.UnauthorizedException;
 import com.elzozcode.job_tracker.repositories.InterviewRepository;
 import com.elzozcode.job_tracker.repositories.JobApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class InterviewServices {
 
     private final InterviewRepository interviewRepository;
     private final JobApplicationRepository jobApplicationRepository;
+
+    /**
+     * Schedule a new interview for a job application
+     */
+    public InterviewResponse scheduleInterview(ScheduleInterviewDto request, User currentUser) {
+        JobApplication jobApp = getOwnedJobApplication(request.getJobApplicationId(), currentUser);
+
+        Interview interview = Interview.builder()
+                .jobApplication(jobApp)
+                .interviewDate(request.getInterviewDate())
+                .interviewType(request.getInterviewType())
+                .status(request.getStatus() != null ? request.getStatus() : InterviewStatus.SCHEDULED)
+                .location(request.getLocation())
+                .interviewerName(request.getInterviewerName())
+                .duration(request.getDuration())
+                .notes(request.getNotes())
+                .build();
+
+        Interview saved = interviewRepository.save(interview);
+        return mapToResponse(saved);
+    }
 
     public InterviewResponse createInterview(InterviewDto request, User currentUser) {
         JobApplication jobApp = getOwnedJobApplication(request.getJobApplicationId(), currentUser);
@@ -38,6 +63,26 @@ public class InterviewServices {
 
     public List<InterviewResponse> getAllByUserId(User currentUser) {
         return interviewRepository.findAllByJobApplicationUserId(currentUser.getId()).stream().map(this::mapToResponse).toList();
+    }
+
+    /**
+     * Get upcoming interviews for the user
+     */
+    public List<InterviewResponse> getUpcomingInterviews(User currentUser) {
+        return interviewRepository.findAllByJobApplicationUserId(currentUser.getId()).stream()
+                .filter(interview -> interview.getInterviewDate().isAfter(java.time.LocalDateTime.now()))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    /**
+     * Get completed interviews for the user
+     */
+    public List<InterviewResponse> getCompletedInterviews(User currentUser) {
+        return interviewRepository.findAllByJobApplicationUserId(currentUser.getId()).stream()
+                .filter(interview -> interview.getInterviewDate().isBefore(java.time.LocalDateTime.now()))
+                .map(this::mapToResponse)
+                .toList();
     }
 
     public InterviewResponse getInterviewById(Long id, User currentUser) {
@@ -123,3 +168,7 @@ public class InterviewServices {
     }
 
 }
+
+
+
+

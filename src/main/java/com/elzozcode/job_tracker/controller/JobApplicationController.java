@@ -1,5 +1,6 @@
 package com.elzozcode.job_tracker.controller;
 
+import com.elzozcode.job_tracker.dtos.CreateJobApplicationDto;
 import com.elzozcode.job_tracker.dtos.JobApplicationDto;
 import com.elzozcode.job_tracker.dtos.response.JobApplicationResponse;
 import com.elzozcode.job_tracker.entity.User;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/job_application")
+@RequestMapping("/api/applications")
 @RequiredArgsConstructor
 @Tag(name = "Job Applications", description = "Manage job applications")
 @SecurityRequirement(name = "Bearer Authentication")
@@ -30,7 +31,21 @@ public class JobApplicationController {
     private final JobApplicationService service;
     private final AuthRepository userRepository;
 
-    @Operation(summary = "Create job application", description = "Add a new job application")
+    @Operation(summary = "Apply for a job", description = "Create a job application from a posted job listing")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Application created successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Job not found")
+    })
+    @PostMapping("/apply")
+    public ResponseEntity<JobApplicationResponse> applyForJob(
+            @Valid @RequestBody CreateJobApplicationDto request
+    ) {
+        JobApplicationResponse response = service.createApplicationFromJob(request, getCurrentUser());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Create job application", description = "Add a new job application manually")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Job application created"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -86,3 +101,5 @@ public class JobApplicationController {
     }
 
 }
+
+
