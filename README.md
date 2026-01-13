@@ -1,6 +1,6 @@
 # Job Application Tracker
 
-A RESTful API for tracking job applications and interview schedules built with Spring Boot.
+A production-ready RESTful API for tracking job applications and interview schedules built with Spring Boot.
 
 ## 📋 Features
 
@@ -9,6 +9,8 @@ A RESTful API for tracking job applications and interview schedules built with S
 - **Interview Scheduling**: Manage multiple interviews per application
 - **Status Tracking**: Monitor application progress (Applied, Interview, Offer, Rejected, etc.)
 - **Secure Access**: Users can only access their own data
+- **API Documentation**: Interactive Swagger UI for easy testing
+- **Containerized**: Docker support for easy deployment
 
 ## 🛠️ Technologies Used
 
@@ -19,40 +21,43 @@ A RESTful API for tracking job applications and interview schedules built with S
 - **Migrations**: Flyway
 - **Build Tool**: Maven
 - **Validation**: Bean Validation
-- **Documentation**: OpenAPI/Swagger (coming soon)
+- **Documentation**: Swagger/OpenAPI 3.0
+- **Containerization**: Docker & Docker Compose
+- **Testing**: JUnit 5, Mockito, Spring Boot Test
 
 ## 🏗️ Architecture
 
-Clean layered architecture:
-- **Controller Layer**: REST endpoints
-- **Service Layer**: Business logic
-- **Repository Layer**: Database access
-- **DTO Layer**: Request/Response separation
+Clean layered architecture following best practices:
+- **Controller Layer**: REST endpoints with proper HTTP status codes
+- **Service Layer**: Business logic and transaction management
+- **Repository Layer**: Database access with Spring Data JPA
+- **DTO Layer**: Request/Response separation from entities
 - **Security Layer**: JWT authentication and authorization
 
 ## 📊 Database Schema
 
 ### Entities:
-- **User**: User accounts
-- **JobApplication**: Job applications with status tracking
+- **User**: User accounts with authentication details
+- **JobApplication**: Job applications with comprehensive tracking
 - **Interview**: Interview schedules linked to applications
 
 ### Enums:
-- ApplicationStatus: APPLIED, PHONE_SCREEN, INTERVIEW, OFFER, REJECTED, ACCEPTED, WITHDRAWN
-- JobType: FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, FREELANCE
-- WorkMode: REMOTE, ONSITE, HYBRID
-- InterviewType: PHONE, TECHNICAL, HR, BEHAVIORAL, ONSITE, PANEL, FINAL
-- InterviewStatus: SCHEDULED, COMPLETED, CANCELLED, RESCHEDULED, NO_SHOW
-- InterviewResult: PASSED, FAILED, PENDING, UNDECIDED
+- **ApplicationStatus**: APPLIED, PHONE_SCREEN, INTERVIEW, OFFER, REJECTED, ACCEPTED, WITHDRAWN
+- **JobType**: FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, FREELANCE
+- **WorkMode**: REMOTE, ONSITE, HYBRID
+- **InterviewType**: PHONE, TECHNICAL, HR, BEHAVIORAL, ONSITE, PANEL, FINAL
+- **InterviewStatus**: SCHEDULED, COMPLETED, CANCELLED, RESCHEDULED, NO_SHOW
+- **InterviewResult**: PASSED, FAILED, PENDING, UNDECIDED
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Java 21 or higher
-- PostgreSQL 18 or higher
+- PostgreSQL 18 or higher (for local development)
 - Maven 3.9+
+- Docker & Docker Compose (for containerized deployment)
 
-### Installation
+### Option 1: Local Development
 
 1. **Clone the repository**
 ```bash
@@ -82,6 +87,20 @@ mvn spring-boot:run
 
 The application will start on `http://localhost:8080`
 
+### Option 2: Docker (Recommended)
+```bash
+# Clone and navigate
+git clone https://github.com/moazmahdy/job-application-tracker.git
+cd job-application-tracker
+
+# Start everything with one command
+docker-compose up --build
+```
+
+Access the application:
+- **API**: http://localhost:8081
+- **Swagger UI**: http://localhost:8081/swagger-ui/index.html
+
 ## 📡 API Endpoints
 
 ### Authentication
@@ -105,12 +124,14 @@ The application will start on `http://localhost:8080`
 
 ## 🔐 Authentication
 
-All endpoints except `/api/job_tracker/*` require JWT token in the Authorization header:
+All endpoints except `/api/auth/*` require JWT token in the Authorization header:
 ```
 Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
-### Example: Register
+### Quick Start Example
+
+1. **Register**
 ```bash
 curl -X POST http://localhost:8080/api/auth/register \
   -H "Content-Type: application/json" \
@@ -122,7 +143,7 @@ curl -X POST http://localhost:8080/api/auth/register \
   }'
 ```
 
-### Example: Login
+2. **Login**
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
@@ -132,7 +153,7 @@ curl -X POST http://localhost:8080/api/auth/login \
   }'
 ```
 
-### Example: Create Job Application
+3. **Use the token**
 ```bash
 curl -X POST http://localhost:8080/api/job-applications \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -140,69 +161,58 @@ curl -X POST http://localhost:8080/api/job-applications \
   -d '{
     "companyName": "Google",
     "jobTitle": "Backend Developer",
-    "jobUrl": "https://careers.google.com/jobs/123",
     "applicationDate": "2026-01-08",
-    "status": "APPLIED",
-    "location": "Cairo, Egypt",
-    "jobType": "FULL_TIME",
-    "workMode": "HYBRID"
+    "status": "APPLIED"
   }'
 ```
 
 ## 🔒 Security Features
 
-- Password encryption with BCrypt
-- JWT-based stateless authentication
-- Role-based access control (planned)
-- Users can only access their own data
-- CSRF protection disabled for stateless API
-- Global exception handling
+- ✅ Password encryption with BCrypt
+- ✅ JWT-based stateless authentication
+- ✅ User data isolation (users can only access their own data)
+- ✅ CSRF protection disabled for stateless API
+- ✅ Global exception handling with proper error messages
+- ✅ Input validation on all endpoints
 
 ## 📦 Project Structure
 ```
 src/main/java/com/elzozcode/job_tracker/
-├── config/          # Security and app configuration
+├── config/          # Security, OpenAPI configuration
 ├── controller/      # REST controllers
-├── dto/             # Data Transfer Objects
+├── dtos/            # Data Transfer Objects
+│   ├── request/     # Request DTOs
+│   └── response/    # Response DTOs
 ├── entity/          # JPA entities
-├── exception/       # Custom exceptions and handlers
-├── repository/      # Spring Data repositories
-├── security/        # JWT and authentication
-└── service/         # Business logic
+│   └── enums/       # Enums
+├── exception/       # Custom exceptions & global handler
+├── repositories/    # Spring Data repositories
+├── security/        # JWT utilities & filters
+└── srvices/         # Business logic services
 
 src/main/resources/
 ├── application.properties  # App configuration
-└── db/migration/          # Flyway migrations
+└── db/migration/          # Flyway migration scripts
+    ├── V1__create_users_table.sql
+    ├── V2__create_job_applications_table.sql
+    └── V3__create_interviews_table.sql
+
+src/test/java/               # Comprehensive test suite
+└── resources/
+    └── application-test.properties  # Test configuration
 ```
 
 ## 🧪 Testing
 
-Comprehensive test suite with 100+ test cases covering unit tests, integration tests, and repository tests.
-
-### Test Suite Overview
-
-- **Unit Tests (3 service classes)**: 21 test cases with mocked dependencies
-- **Integration Tests (3 controller classes)**: 24 test cases with real Spring context
-- **Repository Tests (3 repository classes)**: 32 test cases with H2 in-memory database
-- **Total Test Cases**: 77+ comprehensive tests
-
-### Running Tests
-
-```bash
-# Run all tests
-mvn test
-
-# Run specific test class
-mvn test -Dtest=AuthServiceTest
-
-# Run specific test method
-mvn test -Dtest=AuthServiceTest#testRegisterSuccess
-
-# Run with coverage report
-mvn test jacoco:report
-```
+Comprehensive test suite with 77+ test cases covering all layers.
 
 ### Test Coverage
+
+- **Unit Tests**: 21 test cases (Service layer with mocked dependencies)
+- **Integration Tests**: 24 test cases (Full HTTP request/response cycle)
+- **Repository Tests**: 32 test cases (Database operations with H2)
+
+### Test Suite Overview
 
 **Unit Tests (Services)**
 - AuthService: Register, Login, Duplicate validation, Invalid credentials
@@ -223,6 +233,21 @@ mvn test jacoco:report
 - Relationship integrity
 - Edge cases and error scenarios
 
+### Running Tests
+```bash
+# Run all tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=AuthServiceTest
+
+# Run specific test method
+mvn test -Dtest=AuthServiceTest#testRegisterSuccess
+
+# Run with coverage report
+mvn test jacoco:report
+```
+
 ### Test Technologies
 
 - **JUnit 5**: Modern testing framework
@@ -230,65 +255,35 @@ mvn test jacoco:report
 - **Spring Boot Test**: Integration testing support
 - **MockMvc**: HTTP layer testing
 - **H2 Database**: In-memory test database
-- **AssertJ**: Fluent assertions (via spring-boot-starter-test)
+- **AssertJ**: Fluent assertions
+
+### Test Configuration
+
+Tests use H2 in-memory database for:
+- Complete isolation from production database
+- Fast test execution
+- No external dependencies required
+- Automatic schema creation and cleanup
+- Clean state for each test
+
+Test properties configured in `src/test/resources/application-test.properties`
 
 ### Test Best Practices
 
 - ✅ AAA Pattern (Arrange-Act-Assert)
-- ✅ Descriptive test names with @DisplayName
+- ✅ Descriptive test names
 - ✅ Proper test isolation and independence
 - ✅ Mocking external dependencies
 - ✅ Testing both happy path and error cases
-- ✅ Unique test data using timestamps
+- ✅ Unique test data to avoid conflicts
 - ✅ Complete test documentation
-
-For detailed testing information, see [TESTING.md](TESTING.md).
 
 ## 🐳 Docker Deployment
 
-### Prerequisites
-- Docker Desktop installed
-- Docker Compose installed
-
-### Quick Start with Docker
-
-The easiest way to run this project is using Docker Compose, which automatically sets up both the application and PostgreSQL database.
-
-#### 1. Clone the repository
-```bash
-git clone https://github.com/moazmahdy/job-application-tracker.git
-cd job-application-tracker
-```
-
-#### 2. Start with Docker Compose
+### Quick Start
 ```bash
 docker-compose up --build
 ```
-
-This command will:
-- Build the Spring Boot application
-- Pull and start PostgreSQL 18
-- Run Flyway migrations automatically
-- Start the application on port 8081
-
-#### 3. Access the application
-
-- **API Base URL**: http://localhost:8081
-- **Swagger UI**: http://localhost:8081/swagger-ui/index.html
-- **API Docs (JSON)**: http://localhost:8081/v3/api-docs
-
-### Docker Commands Reference
-
-| Command | Description |
-|---------|-------------|
-| `docker-compose up` | Start all services |
-| `docker-compose up -d` | Start in detached mode (background) |
-| `docker-compose up --build` | Rebuild and start |
-| `docker-compose down` | Stop all services |
-| `docker-compose down -v` | Stop and remove volumes (clears database) |
-| `docker-compose logs -f` | View logs in real-time |
-| `docker-compose logs -f app` | View app logs only |
-| `docker-compose ps` | List running containers |
 
 ### What's Included in Docker Setup
 
@@ -305,7 +300,7 @@ This command will:
 │   Docker Network    │
 │                     │
 │  ┌──────────────┐   │
-│  │   App (8080) │   │
+│  │   App (8081) │   │
 │  └──────┬───────┘   │
 │         │           │
 │  ┌──────▼───────┐   │
@@ -317,8 +312,6 @@ This command will:
 
 ### Environment Variables
 
-The following environment variables are configured in `docker-compose.yml`:
-
 **Database:**
 - `POSTGRES_DB`: job_tracker_db
 - `POSTGRES_USER`: postgres
@@ -329,14 +322,25 @@ The following environment variables are configured in `docker-compose.yml`:
 - `JWT_SECRET`: Configured for Docker environment
 - `JWT_EXPIRATION`: 86400000 (24 hours)
 
-You can modify these in `docker-compose.yml` before running.
-
 ### Ports
 
 - **Application**: 8081 (external) → 8080 (internal)
 - **PostgreSQL**: 5433 (external) → 5432 (internal)
 
 *Note: Different external ports prevent conflicts with locally installed services.*
+
+### Docker Commands Reference
+
+| Command | Description |
+|---------|-------------|
+| `docker-compose up` | Start all services |
+| `docker-compose up -d` | Start in detached mode (background) |
+| `docker-compose up --build` | Rebuild and start |
+| `docker-compose down` | Stop all services |
+| `docker-compose down -v` | Stop and remove volumes (clears database) |
+| `docker-compose logs -f` | View logs in real-time |
+| `docker-compose logs -f app` | View app logs only |
+| `docker-compose ps` | List running containers |
 
 ### Troubleshooting
 
@@ -366,30 +370,50 @@ docker-compose down -v
 docker-compose up --build
 ```
 
----
-
 ## 📝 API Documentation
 
-Interactive API documentation is available via Swagger UI:
+Interactive Swagger UI documentation is available for easy API exploration and testing.
 
-**Local:**
+### Access Swagger UI
+
+**Local Development:**
 ```
-http://localhost:8080/api/job_tracker/swagger-ui/index.html
+http://localhost:8080/swagger-ui/index.html
 ```
 
-**Features:**
-- Interactive API testing
-- JWT authentication support
-- Request/Response examples
-- Schema definitions
+**Docker:**
+```
+http://localhost:8081/swagger-ui/index.html
+```
 
-### How to use:
-1. Start the application
-2. Navigate to the Swagger UI URL
-3. Click "Authorize" button
-4. Login via `/auth/login` endpoint and copy the token
-5. Paste token in the authorization dialog
-6. Try out any protected endpoint
+**OpenAPI JSON:**
+```
+http://localhost:8080/v3/api-docs
+```
+
+### Swagger Features
+
+- 📖 **Interactive Documentation**: View all endpoints with detailed descriptions
+- 🔐 **JWT Authentication**: Built-in authorization support
+- 🧪 **Try It Out**: Test endpoints directly from the browser
+- 📋 **Request/Response Examples**: See example payloads
+- 📊 **Schema Definitions**: Explore data models
+
+### Using Swagger UI:
+
+1. Navigate to the Swagger UI URL
+2. Click **"Authorize"** button (top right)
+3. Login via `/api/auth/login` endpoint:
+```json
+   {
+     "username": "your_username",
+     "password": "your_password"
+   }
+```
+4. Copy the `token` from the response
+5. Paste token in the authorization dialog (without "Bearer" prefix)
+6. Click **"Authorize"**
+7. Now you can test any protected endpoint!
 
 ## 🤝 Contributing
 
@@ -403,7 +427,7 @@ This project is open source and available under the MIT License.
 
 **Moaz Mahdy**
 - GitHub: [@moazmahdy](https://github.com/moazmahdy)
-- LinkedIn: [Moaz-Mahdy](https://www.linkedin.com/in/moaz-mahdy)
+- LinkedIn: [Moaz Mahdy](https://www.linkedin.com/in/moaz-mahdy)
 
 ## 🙏 Acknowledgments
 
