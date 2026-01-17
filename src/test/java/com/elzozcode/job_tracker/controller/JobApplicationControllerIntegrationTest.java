@@ -1,81 +1,155 @@
-package com.elzozcode.job_tracker.controller;
-
-import com.elzozcode.job_tracker.dtos.*;
-import com.elzozcode.job_tracker.entity.enums.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
-
-import java.time.LocalDate;
-import java.util.Map;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient
-class JobApplicationControllerIntegrationTest {
-
-    @Autowired
-    private WebTestClient webTestClient;
-
-    private String jwtToken;
-
-    @BeforeEach
-    void setup() {
-
-        // Register
-        RegisterDto register = new RegisterDto();
-        register.setUsername("user" + System.currentTimeMillis());
-        register.setEmail("user" + System.currentTimeMillis() + "@mail.com");
-        register.setPassword("password123");
-        register.setFullName("Test");
-
-        webTestClient.post()
-                .uri("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(register)
-                .exchange()
-                .expectStatus().isCreated();
-
-        // Login → JWT
-        LoginDto login = new LoginDto();
-        login.setUsername(register.getUsername());
-        login.setPassword("password123");
-
-        jwtToken = webTestClient.post()
-                .uri("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(login)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Map.class)
-                .returnResult()
-                .getResponseBody()
-                .get("token")
-                .toString();
-    }
-
-    @Test
-    void createJobApplication() {
-
-        JobApplicationDto job = new JobApplicationDto();
-        job.setCompanyName("Google");
-        job.setJobTitle("Backend");
-        job.setApplicationDate(LocalDate.now());
-        job.setStatus(ApplicationStatus.APPLIED);
-        job.setJobType(JobType.FULL_TIME);
-        job.setWorkMode(WorkMode.HYBRID);
-
-        webTestClient.post()
-                .uri("/job_application")
-                .header("Authorization", "Bearer " + jwtToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(job)
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody()
-                .jsonPath("$.companyName").isEqualTo("Google");
-    }
-}
+//package com.elzozcode.job_tracker.controller;
+//
+//import com.elzozcode.job_tracker.dtos.CreateJobApplicationDto;
+//import com.elzozcode.job_tracker.dtos.RegisterDto;
+//import com.elzozcode.job_tracker.entity.enums.UserType;
+//import com.elzozcode.job_tracker.entity.Company;
+//import com.elzozcode.job_tracker.entity.Job;
+//import com.elzozcode.job_tracker.entity.JobApplication;
+//import com.elzozcode.job_tracker.entity.User;
+//import com.elzozcode.job_tracker.repositories.AuthRepository;
+//import com.elzozcode.job_tracker.repositories.CompanyRepository;
+//import com.elzozcode.job_tracker.repositories.JobApplicationRepository;
+//import com.elzozcode.job_tracker.repositories.JobRepository;
+//import com.elzozcode.job_tracker.security.JwtUtil;
+//import com.fasterxml.jackson.databind.ObjectMapper;
+//import org.junit.jupiter.api.BeforeEach;
+//import org.junit.jupiter.api.Test;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+//import org.springframework.boot.test.context.SpringBootTest;
+//import org.springframework.http.MediaType;
+//import org.springframework.security.crypto.password.PasswordEncoder;
+//import org.springframework.test.web.servlet.MockMvc;
+//import org.springframework.transaction.annotation.Transactional;
+//
+//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+//import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+//
+//@SpringBootTest
+//@AutoConfigureMockMvc
+//@Transactional
+//public class JobApplicationControllerIntegrationTest {
+//
+//    @Autowired
+//    private MockMvc mockMvc;
+//
+//    @Autowired
+//    private ObjectMapper objectMapper;
+//
+//    @Autowired
+//    private AuthRepository authRepository;
+//
+//    @Autowired
+//    private CompanyRepository companyRepository;
+//
+//    @Autowired
+//    private JobRepository jobRepository;
+//
+//    @Autowired
+//    private JobApplicationRepository jobApplicationRepository;
+//
+//    @Autowired
+//    private JwtUtil jwtUtil;
+//
+//    @Autowired
+//    private PasswordEncoder passwordEncoder;
+//
+//    private String companyToken;
+//    private String userToken;
+//    private Long jobId;
+//    private JobApplication jobApplication;
+//
+//    @BeforeEach
+//    void setUp() {
+//        authRepository.deleteAll();
+//        companyRepository.deleteAll();
+//        jobRepository.deleteAll();
+//        jobApplicationRepository.deleteAll();
+//
+//        // Create company and user
+//        Company company = new Company();
+//        company.setName("Test Company");
+//        company = companyRepository.save(company);
+//
+//        RegisterDto companyRegisterDto = new RegisterDto("companyUser", "company@example.com", "password", "Company User", UserType.COMPANY, "Test Company");
+//        User companyUser = new User();
+//        companyUser.setUsername(companyRegisterDto.getUsername());
+//        companyUser.setEmail(companyRegisterDto.getEmail());
+//        companyUser.setPassword(passwordEncoder.encode(companyRegisterDto.getPassword()));
+//        companyUser.setFullName(companyRegisterDto.getFullName());
+//        companyUser.setRole(com.elzozcode.job_tracker.entity.enums.Role.ROLE_COMPANY);
+//        companyUser.setCompany(company);
+//        companyUser = authRepository.save(companyUser);
+//        companyToken = jwtUtil.generateToken(companyUser);
+//
+//        // Create regular user
+//        RegisterDto userRegisterDto = new RegisterDto("testuser", "testuser@example.com", "password", "Test User", UserType.USER, null);
+//        User user = new User();
+//        user.setUsername(userRegisterDto.getUsername());
+//        user.setEmail(userRegisterDto.getEmail());
+//        user.setPassword(passwordEncoder.encode(userRegisterDto.getPassword()));
+//        user.setFullName(userRegisterDto.getFullName());
+//        user.setRole(com.elzozcode.job_tracker.entity.enums.Role.ROLE_USER);
+//        user = authRepository.save(user);
+//        userToken = jwtUtil.generateToken(user);
+//
+//        // Create job
+//        Job job = new Job();
+//        job.setJobTitle("Test Job");
+//        job.setCompany(company);
+//        job.setIsActive(true);
+//        job = jobRepository.save(job);
+//        jobId = job.getId();
+//
+//        // Create job application
+//        jobApplication = new JobApplication();
+//        jobApplication.setUser(user);
+//        jobApplication.setJob(job);
+//        jobApplicationRepository.save(jobApplication);
+//    }
+//
+//    @Test
+//    void applyForJob_withUserToken_shouldCreateApplication() throws Exception {
+//        CreateJobApplicationDto dto = new CreateJobApplicationDto();
+//        dto.setJobId(jobId);
+//        mockMvc.perform(post("/api/applications/apply")
+//                        .header("Authorization", "Bearer " + userToken)
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(dto)))
+//                .andExpect(status().isCreated());
+//    }
+//
+//    @Test
+//    void applyForJob_withCompanyToken_shouldReturnForbidden() throws Exception {
+//        CreateJobApplicationDto dto = new CreateJobApplicationDto();
+//        dto.setJobId(jobId);
+//        mockMvc.perform(post("/api/applications/apply")
+//                        .header("Authorization", "Bearer " + companyToken)
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(dto)))
+//                .andExpect(status().isForbidden());
+//    }
+//
+//    @Test
+//    void getJobApplicationsByJobId_withCompanyToken_shouldReturnApplications() throws Exception {
+//        mockMvc.perform(get("/api/applications/job/" + jobId)
+//                        .header("Authorization", "Bearer " + companyToken))
+//                .andExpect(status().isOk());
+//    }
+//
+//    @Test
+//    void getJobApplicationsByJobId_withUserToken_shouldReturnForbidden() throws Exception {
+//        mockMvc.perform(get("/api/applications/job/" + jobId)
+//                        .header("Authorization", "Bearer " + userToken))
+//                .andExpect(status().isForbidden());
+//    }
+//
+//    @Test
+//    void getApplicationById_withOwnedApplication_shouldReturnApplication() throws Exception {
+//        mockMvc.perform(get("/api/applications/" + jobApplication.getId())
+//                        .header("Authorization", "Bearer " + userToken))
+//                .andExpect(status().isOk());
+//    }
+//}

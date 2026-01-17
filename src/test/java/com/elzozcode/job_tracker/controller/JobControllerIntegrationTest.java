@@ -1,10 +1,14 @@
 //package com.elzozcode.job_tracker.controller;
 //
+//import com.elzozcode.job_tracker.dtos.JobDto;
 //import com.elzozcode.job_tracker.dtos.RegisterDto;
-//import com.elzozcode.job_tracker.dtos.ScheduleInterviewDto;
 //import com.elzozcode.job_tracker.entity.enums.UserType;
-//import com.elzozcode.job_tracker.entity.*;
-//import com.elzozcode.job_tracker.repositories.*;
+//import com.elzozcode.job_tracker.entity.Company;
+//import com.elzozcode.job_tracker.entity.Job;
+//import com.elzozcode.job_tracker.entity.User;
+//import com.elzozcode.job_tracker.repositories.AuthRepository;
+//import com.elzozcode.job_tracker.repositories.CompanyRepository;
+//import com.elzozcode.job_tracker.repositories.JobRepository;
 //import com.elzozcode.job_tracker.security.JwtUtil;
 //import com.fasterxml.jackson.databind.ObjectMapper;
 //import org.junit.jupiter.api.BeforeEach;
@@ -17,16 +21,15 @@
 //import org.springframework.test.web.servlet.MockMvc;
 //import org.springframework.transaction.annotation.Transactional;
 //
-//import java.time.LocalDateTime;
-//
 //import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+//import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 //import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 //
 //@SpringBootTest
 //@AutoConfigureMockMvc
 //@Transactional
-//public class InterviewControllerIntegrationTest {
+//public class JobControllerIntegrationTest {
 //
 //    @Autowired
 //    private MockMvc mockMvc;
@@ -44,12 +47,6 @@
 //    private JobRepository jobRepository;
 //
 //    @Autowired
-//    private JobApplicationRepository jobApplicationRepository;
-//
-//    @Autowired
-//    private InterviewRepository interviewRepository;
-//
-//    @Autowired
 //    private JwtUtil jwtUtil;
 //
 //    @Autowired
@@ -57,21 +54,20 @@
 //
 //    private String companyToken;
 //    private String userToken;
-//    private Long jobApplicationId;
-//    private Interview interview;
+//    private Long companyId;
+//    private Job job;
 //
 //    @BeforeEach
 //    void setUp() {
 //        authRepository.deleteAll();
 //        companyRepository.deleteAll();
 //        jobRepository.deleteAll();
-//        jobApplicationRepository.deleteAll();
-//        interviewRepository.deleteAll();
 //
 //        // Create company and user
 //        Company company = new Company();
 //        company.setName("Test Company");
 //        company = companyRepository.save(company);
+//        companyId = company.getCompanyId();
 //
 //        RegisterDto companyRegisterDto = new RegisterDto("companyUser", "company@example.com", "password", "Company User", UserType.COMPANY, "Test Company");
 //        User companyUser = new User();
@@ -96,68 +92,47 @@
 //        userToken = jwtUtil.generateToken(user);
 //
 //        // Create job
-//        Job job = new Job();
+//        job = new Job();
 //        job.setJobTitle("Test Job");
 //        job.setCompany(company);
 //        job.setIsActive(true);
 //        job = jobRepository.save(job);
-//
-//        // Create job application
-//        JobApplication jobApplication = new JobApplication();
-//        jobApplication.setUser(user);
-//        jobApplication.setJob(job);
-//        jobApplication = jobApplicationRepository.save(jobApplication);
-//        jobApplicationId = jobApplication.getId();
-//
-//        // Create interview
-//        interview = new Interview();
-//        interview.setJobApplication(jobApplication);
-//        interview.setInterviewDate(LocalDateTime.now().plusDays(7));
-//        interviewRepository.save(interview);
 //    }
 //
 //    @Test
-//    void scheduleInterview_withCompanyToken_shouldScheduleInterview() throws Exception {
-//        ScheduleInterviewDto dto = new ScheduleInterviewDto();
-//        dto.setJobApplicationId(jobApplicationId);
-//        dto.setInterviewDate(LocalDateTime.now().plusDays(10));
-//        mockMvc.perform(post("/api/interviews/schedule")
+//    void createJob_withCompanyToken_shouldCreateJob() throws Exception {
+//        JobDto jobDto = JobDto.builder().jobTitle("New Job").build();
+//        mockMvc.perform(post("/api/jobs")
 //                        .header("Authorization", "Bearer " + companyToken)
 //                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(dto)))
+//                        .content(objectMapper.writeValueAsString(jobDto)))
 //                .andExpect(status().isCreated());
 //    }
 //
 //    @Test
-//    void scheduleInterview_withUserToken_shouldReturnForbidden() throws Exception {
-//        ScheduleInterviewDto dto = new ScheduleInterviewDto();
-//        dto.setJobApplicationId(jobApplicationId);
-//        dto.setInterviewDate(LocalDateTime.now().plusDays(10));
-//        mockMvc.perform(post("/api/interviews/schedule")
+//    void createJob_withUserToken_shouldReturnForbidden() throws Exception {
+//        JobDto jobDto = JobDto.builder().jobTitle("New Job").build();
+//        mockMvc.perform(post("/api/jobs")
 //                        .header("Authorization", "Bearer " + userToken)
 //                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(objectMapper.writeValueAsString(dto)))
+//                        .content(objectMapper.writeValueAsString(jobDto)))
 //                .andExpect(status().isForbidden());
 //    }
 //
 //    @Test
-//    void getAllByUserId_withUserToken_shouldReturnInterviews() throws Exception {
-//        mockMvc.perform(get("/api/interviews/user")
-//                        .header("Authorization", "Bearer " + userToken))
+//    void updateJob_withOwnedJob_shouldUpdateJob() throws Exception {
+//        JobDto jobDto = JobDto.builder().jobTitle("Updated Job").build();
+//        mockMvc.perform(put("/api/jobs/" + job.getId())
+//                        .header("Authorization", "Bearer " + companyToken)
+//                        .contentType(MediaType.APPLICATION_JSON)
+//                        .content(objectMapper.writeValueAsString(jobDto)))
 //                .andExpect(status().isOk());
 //    }
 //
 //    @Test
-//    void getAllByCompanyId_withCompanyToken_shouldReturnInterviews() throws Exception {
-//        mockMvc.perform(get("/api/interviews/company")
+//    void deleteJob_withOwnedJob_shouldDeleteJob() throws Exception {
+//        mockMvc.perform(delete("/api/jobs/" + job.getId())
 //                        .header("Authorization", "Bearer " + companyToken))
-//                .andExpect(status().isOk());
-//    }
-//
-//    @Test
-//    void getInterviewById_withOwnedInterview_shouldReturnInterview() throws Exception {
-//        mockMvc.perform(get("/api/interviews/" + interview.getId())
-//                        .header("Authorization", "Bearer " + userToken))
-//                .andExpect(status().isOk());
+//                .andExpect(status().isNoContent());
 //    }
 //}

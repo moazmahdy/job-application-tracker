@@ -5,7 +5,9 @@ import com.elzozcode.job_tracker.entity.Company;
 import com.elzozcode.job_tracker.exception.DuplicateResourceException;
 import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
 import com.elzozcode.job_tracker.repositories.CompanyRepository;
+import com.elzozcode.job_tracker.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,14 +32,32 @@ public class CompanyService {
                 .website(companyDto.getWebsite())
                 .industry(companyDto.getIndustry())
                 .location(companyDto.getLocation())
-                .companySize(companyDto.getCompanySize())
-                .headquarter(companyDto.getHeadquarter())
-                .foundedYear(companyDto.getFoundedYear())
-                .logo_url(companyDto.getLogoUrl())
                 .build();
 
         Company savedCompany = companyRepository.save(company);
         return mapToDto(savedCompany);
+    }
+
+    public CompanyDto getCompanyProfile() {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        Company company = companyRepository.findById(userPrincipal.getCompanyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + userPrincipal.getCompanyId()));
+        return mapToDto(company);
+    }
+
+    public CompanyDto updateCompanyProfile(CompanyDto companyDto) {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        Company company = companyRepository.findById(userPrincipal.getCompanyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + userPrincipal.getCompanyId()));
+
+        company.setName(companyDto.getName());
+        company.setDescription(companyDto.getDescription());
+        company.setWebsite(companyDto.getWebsite());
+        company.setIndustry(companyDto.getIndustry());
+        company.setLocation(companyDto.getLocation());
+
+        Company updatedCompany = companyRepository.save(company);
+        return mapToDto(updatedCompany);
     }
 
     public CompanyDto getCompanyById(Long companyId) {
@@ -83,10 +103,6 @@ public class CompanyService {
         company.setWebsite(companyDto.getWebsite());
         company.setIndustry(companyDto.getIndustry());
         company.setLocation(companyDto.getLocation());
-        company.setCompanySize(companyDto.getCompanySize());
-        company.setHeadquarter(companyDto.getHeadquarter());
-        company.setFoundedYear(companyDto.getFoundedYear());
-        company.setLogo_url(companyDto.getLogoUrl());
 
         Company updatedCompany = companyRepository.save(company);
         return mapToDto(updatedCompany);
@@ -98,18 +114,17 @@ public class CompanyService {
         companyRepository.delete(company);
     }
 
+    private UserPrincipal getUserPrincipal() {
+        return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
     private CompanyDto mapToDto(Company company) {
         return CompanyDto.builder()
-                .id(company.getId())
                 .name(company.getName())
                 .description(company.getDescription())
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .location(company.getLocation())
-                .companySize(company.getCompanySize())
-                .headquarter(company.getHeadquarter())
-                .foundedYear(company.getFoundedYear())
-                .logoUrl(company.getLogo_url())
                 .build();
     }
 }

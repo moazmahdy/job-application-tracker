@@ -14,7 +14,7 @@ A production-ready RESTful API for tracking job applications and interview sched
 
 ## 🛠️ Technologies Used
 
-- **Backend**: Java 21, Spring Boot 4.0.1
+- **Backend**: Java 17, Spring Boot 4.0.1
 - **Security**: Spring Security, JWT (JSON Web Tokens)
 - **Database**: PostgreSQL 18
 - **ORM**: Hibernate/JPA
@@ -38,6 +38,8 @@ Clean layered architecture following best practices:
 
 ### Entities:
 - **User**: User accounts with authentication details
+- **Company**: Represents a company that can post jobs.
+- **Job**: Represents a job posting by a company.
 - **JobApplication**: Job applications with comprehensive tracking
 - **Interview**: Interview schedules linked to applications
 
@@ -52,7 +54,7 @@ Clean layered architecture following best practices:
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Java 21 or higher
+- Java 17 or higher
 - PostgreSQL 18 or higher (for local development)
 - Maven 3.9+
 - Docker & Docker Compose (for containerized deployment)
@@ -106,6 +108,29 @@ Access the application:
 ### Authentication
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login and receive JWT token
+
+### Companies
+- `GET /api/companies/profile` - Get company profile for the logged in company
+- `PUT /api/companies/profile` - Update company profile for the logged in company
+- `GET /api/companies/{id}` - Get company by ID
+- `GET /api/companies/name/{name}` - Get company by name
+- `GET /api/companies` - Get all companies
+- `GET /api/companies/search` - Search companies by name, industry, or location
+- `GET /api/companies/industry/{industry}` - Get companies by industry
+- `GET /api/companies/industries` - Get all available industries
+- `PUT /api/companies/{id}` - Update company
+- `DELETE /api/companies/{id}` - Delete a company from the system
+
+### Jobs
+- `GET /jobs` - Get all active jobs
+- `GET /jobs/{jobId}` - Get job by ID
+- `GET /jobs/search` - Search for jobs by keyword
+- `GET /jobs/upcoming-deadlines` - Get jobs with upcoming deadlines
+- `POST /jobs` - Create a new job listing
+- `GET /jobs/my-jobs` - Get all jobs posted by the authenticated company
+- `PUT /jobs/{jobId}` - Update an existing job
+- `PATCH /jobs/{jobId}/deactivate` - Deactivate a job listing
+- `DELETE /jobs/{jobId}` - Permanently delete a job
 
 ### Job Applications
 - `POST /api/job-applications` - Create new job application
@@ -181,9 +206,14 @@ src/main/java/com/elzozcode/job_tracker/
 ├── config/          # Security, OpenAPI configuration
 ├── controller/      # REST controllers
 ├── dtos/            # Data Transfer Objects
-│   ├── request/     # Request DTOs
+│   ├── CompanyDto.java
+│   ├── JobDto.java
+│   ├── ...
 │   └── response/    # Response DTOs
 ├── entity/          # JPA entities
+│   ├── Company.java
+│   ├── Job.java
+│   └── ...
 │   └── enums/       # Enums
 ├── exception/       # Custom exceptions & global handler
 ├── repositories/    # Spring Data repositories

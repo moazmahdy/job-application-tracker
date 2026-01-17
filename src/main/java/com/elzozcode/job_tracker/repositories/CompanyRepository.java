@@ -16,6 +16,10 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
 
     boolean existsByNameIgnoreCase(String name);
 
+    boolean existsCompanyByEmail(String email);
+
+    Optional<Company> findByEmail(String email);
+
     @Query("SELECT c FROM Company c WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(c.industry) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<Company> searchCompanies(@Param("searchTerm") String searchTerm);
 

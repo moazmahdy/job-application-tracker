@@ -3,10 +3,11 @@ package com.elzozcode.job_tracker.srvices;
 import com.elzozcode.job_tracker.dtos.JobDto;
 import com.elzozcode.job_tracker.entity.Company;
 import com.elzozcode.job_tracker.entity.Job;
-import com.elzozcode.job_tracker.exception.DuplicateResourceException;
 import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
+import com.elzozcode.job_tracker.exception.UnauthorizedException;
 import com.elzozcode.job_tracker.repositories.CompanyRepository;
 import com.elzozcode.job_tracker.repositories.JobRepository;
+import com.elzozcode.job_tracker.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +25,10 @@ public class JobService {
     private final CompanyRepository companyRepository;
 
     public JobDto createJob(JobDto jobDto) {
-        Company company = companyRepository.findById(jobDto.getCompanyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + jobDto.getCompanyId()));
+        Long companyId = SecurityUtils.getCurrentCompanyId();
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + companyId));
 
         Job job = Job.builder()
                 .company(company)
@@ -60,9 +63,8 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
-    public List<JobDto> getJobsByCompanyId(Long companyId) {
-        companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + companyId));
+    public List<JobDto> getMyCompanyJobs() {
+        Long companyId = SecurityUtils.getCurrentCompanyId();
 
         return jobRepository.findActiveJobsByCompanyId(companyId).stream()
                 .map(this::mapToDto)
@@ -85,11 +87,7 @@ public class JobService {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + jobId));
 
-        if (jobDto.getCompanyId() != null && !jobDto.getCompanyId().equals(job.getCompany().getId())) {
-            Company company = companyRepository.findById(jobDto.getCompanyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + jobDto.getCompanyId()));
-            job.setCompany(company);
-        }
+        checkOwnership(job.getCompany().getId());
 
         if (jobDto.getJobTitle() != null) job.setJobTitle(jobDto.getJobTitle());
         if (jobDto.getDescription() != null) job.setDescription(jobDto.getDescription());
@@ -111,6 +109,9 @@ public class JobService {
     public void deactivateJob(Long jobId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + jobId));
+
+        checkOwnership(job.getCompany().getId());
+
         job.setIsActive(false);
         jobRepository.save(job);
     }
@@ -118,7 +119,18 @@ public class JobService {
     public void deleteJob(Long jobId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + jobId));
+
+        checkOwnership(job.getCompany().getId());
+
         jobRepository.delete(job);
+    }
+
+    private void checkOwnership(Long jobCompanyId) {
+        Long currentCompanyId = SecurityUtils.getCurrentCompanyId();
+
+        if (!currentCompanyId.equals(jobCompanyId)) {
+            throw new UnauthorizedException("You are not authorized to perform this action on this job.");
+        }
     }
 
     private JobDto mapToDto(Job job) {
@@ -142,4 +154,3 @@ public class JobService {
                 .build();
     }
 }
-

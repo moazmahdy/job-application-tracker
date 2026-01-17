@@ -18,4 +18,9 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
 
     Optional<Interview> findByIdAndJobApplicationUserId(Long id, Long userId);
 
+    //List<Interview> findAllByJobApplication_Job_Company_Company_Id(Long companyId);
+
+    List<Interview> findAllByJobApplication_Job_Company_Id(Long companyId);
+
+
 }

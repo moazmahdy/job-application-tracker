@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Authentication", description = "User registration and login endpoints")
 public class AuthController {
 
-    private final AuthService userService;
+    private final AuthService authService;
 
     @Operation(summary = "Register new user", description = "Create a new user account")
     @ApiResponses(value = {
@@ -29,11 +29,10 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<AuthResponse> register(
             @Valid @RequestBody RegisterDto request
     ) {
-        AuthResponse response = userService.register(request);
+        AuthResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -43,10 +42,9 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     @PostMapping("/login")
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginDto request
     ) {
-        return ResponseEntity.ok(userService.login(request));
+        return ResponseEntity.ok(authService.login(request));
     }
 }

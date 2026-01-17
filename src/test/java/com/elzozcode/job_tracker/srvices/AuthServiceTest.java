@@ -1,12 +1,11 @@
 package com.elzozcode.job_tracker.srvices;
 
-import com.elzozcode.job_tracker.dtos.LoginDto;
 import com.elzozcode.job_tracker.dtos.RegisterDto;
-import com.elzozcode.job_tracker.dtos.response.AuthResponse;
+import com.elzozcode.job_tracker.entity.enums.UserType;
+import com.elzozcode.job_tracker.entity.Company;
 import com.elzozcode.job_tracker.entity.User;
-import com.elzozcode.job_tracker.exception.DuplicateResourceException;
-import com.elzozcode.job_tracker.exception.InvalidCredentialsException;
 import com.elzozcode.job_tracker.repositories.AuthRepository;
+import com.elzozcode.job_tracker.repositories.CompanyRepository;
 import com.elzozcode.job_tracker.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,18 +15,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
     @Mock
-    private AuthRepository authRepository;
+    private AuthRepository userRepository;
+
+    @Mock
+    private CompanyRepository companyRepository;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -38,106 +37,73 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    private RegisterDto registerDto;
-    private LoginDto loginDto;
-    private User testUser;
+    private RegisterDto userRegisterDto;
+    private RegisterDto companyRegisterDto;
 
     @BeforeEach
     void setUp() {
-        registerDto = new RegisterDto();
-        registerDto.setUsername("testuser");
-        registerDto.setEmail("test@example.com");
-        registerDto.setPassword("password123");
-        registerDto.setFullName("Test User");
-
-        loginDto = new LoginDto();
-        loginDto.setUsername("testuser");
-        loginDto.setPassword("password123");
-
-        testUser = User.builder()
-                .id(1L)
-                .username("testuser")
+        userRegisterDto = RegisterDto.builder()
                 .email("test@example.com")
-                .password("$2a$10$encodedPassword")
+                .password("password")
                 .fullName("Test User")
+                .type(UserType.USER)
+                .build();
+
+        companyRegisterDto = RegisterDto.builder()
+                .email("company@example.com")
+                .password("password")
+                .companyName("Test Company")
+                .type(UserType.COMPANY)
                 .build();
     }
 
     @Test
-    void register_Success() {
-        // Arrange
-        when(authRepository.existsUsersByUsername(anyString())).thenReturn(false);
-        when(authRepository.existsUsersByEmail(anyString())).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn("$2a$10$encodedPassword");
-        when(authRepository.save(any(User.class))).thenReturn(testUser);
+    void register_user_shouldCreateUser() {
 
-        // Act
-        AuthResponse response = authService.register(registerDto);
+        User savedUser = User.builder()
+                .id(1L)
+                .email(userRegisterDto.getEmail())
+                .fullName(userRegisterDto.getFullName())
+                .build();
 
-        // Assert
-        assertNotNull(response);
-        assertEquals("testuser", response.getUsername());
-        assertEquals("test@example.com", response.getEmail());
-        verify(authRepository, times(1)).save(any(User.class));
+        when(userRepository.existsUsersByEmail(userRegisterDto.getEmail()))
+                .thenReturn(false);
+        when(passwordEncoder.encode(userRegisterDto.getPassword()))
+                .thenReturn("encoded");
+        when(userRepository.save(any(User.class)))
+                .thenReturn(savedUser);
+        when(jwtUtil.generateUserToken(any(User.class)))
+                .thenReturn("jwt-token");
+
+        var response = authService.register(userRegisterDto);
+
+        assertEquals("USER", response.getType());
+        assertEquals(savedUser.getEmail(), response.getEmail());
+        assertEquals(savedUser.getFullName(), response.getName());
     }
 
     @Test
-    void register_UsernameExists_ThrowsException() {
-        // Arrange
-        when(authRepository.existsUsersByUsername("testuser")).thenReturn(true);
+    void register_company_shouldCreateCompany() {
 
-        // Act & Assert
-        assertThrows(DuplicateResourceException.class, () -> authService.register(registerDto));
-        verify(authRepository, never()).save(any(User.class));
-    }
+        Company savedCompany = Company.builder()
+                .id(2L)
+                .name(companyRegisterDto.getCompanyName())
+                .email(companyRegisterDto.getEmail())
+                .build();
 
-    @Test
-    void register_EmailExists_ThrowsException() {
-        // Arrange
-        when(authRepository.existsUsersByUsername(anyString())).thenReturn(false);
-        when(authRepository.existsUsersByEmail("test@example.com")).thenReturn(true);
+        when(companyRepository.existsCompanyByEmail(companyRegisterDto.getEmail()))
+                .thenReturn(false);
+        when(passwordEncoder.encode(companyRegisterDto.getPassword()))
+                .thenReturn("encoded");
+        when(companyRepository.save(any(Company.class)))
+                .thenReturn(savedCompany);
+        when(jwtUtil.generateCompanyToken(any(Company.class)))
+                .thenReturn("jwt-token");
 
-        // Act & Assert
-        assertThrows(DuplicateResourceException.class, () -> authService.register(registerDto));
-        verify(authRepository, never()).save(any(User.class));
-    }
+        var response = authService.register(companyRegisterDto);
 
-    @Test
-    void login_Success() {
-        // Arrange
-        when(authRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(passwordEncoder.matches("password123", "$2a$10$encodedPassword")).thenReturn(true);
-        when(jwtUtil.generateToken("testuser")).thenReturn("test-token");
-
-        // Act
-        AuthResponse response = authService.login(loginDto);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("testuser", response.getUsername());
-        assertEquals("test-token", response.getToken());
-        verify(jwtUtil, times(1)).generateToken("testuser");
-    }
-
-    @Test
-    void login_UserNotFound_ThrowsException() {
-        // Arrange
-        when(authRepository.findByUsername("testuser")).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(InvalidCredentialsException.class, () -> authService.login(loginDto));
-        verify(jwtUtil, never()).generateToken(anyString());
-    }
-
-    @Test
-    void login_InvalidPassword_ThrowsException() {
-        // Arrange
-        when(authRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(passwordEncoder.matches("password123", "$2a$10$encodedPassword")).thenReturn(false);
-
-        // Act & Assert
-        assertThrows(InvalidCredentialsException.class, () -> authService.login(loginDto));
-        verify(jwtUtil, never()).generateToken(anyString());
+        assertEquals("COMPANY", response.getType());
+        assertEquals(savedCompany.getEmail(), response.getEmail());
+        assertEquals(savedCompany.getName(), response.getName());
     }
 }
-

@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -50,10 +51,10 @@ public class Job {
     private WorkMode workMode;
 
     @Column(name = "salary_min")
-    private Double salaryMin;
+    private BigDecimal salaryMin;
 
     @Column(name = "salary_max")
-    private Double salaryMax;
+    private BigDecimal salaryMax;
 
     @Column(name = "currency", length = 10)
     private String currency; // e.g., "USD", "EGP"

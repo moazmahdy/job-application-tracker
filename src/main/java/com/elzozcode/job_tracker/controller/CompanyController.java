@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,12 +21,22 @@ public class CompanyController {
 
     private final CompanyService companyService;
 
-    @PostMapping
-    @Operation(summary = "Create a new company", description = "Create a new company in the system")
+    @GetMapping("/profile")
+    @Operation(summary = "Get company profile", description = "Retrieve company profile for the logged in company")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<CompanyDto> createCompany(@RequestBody CompanyDto companyDto) {
-        CompanyDto createdCompany = companyService.createCompany(companyDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCompany);
+    @PreAuthorize("hasRole('COMPANY')")
+    public ResponseEntity<CompanyDto> getCompanyProfile() {
+        CompanyDto company = companyService.getCompanyProfile();
+        return ResponseEntity.ok(company);
+    }
+
+    @PutMapping("/profile")
+    @Operation(summary = "Update company profile", description = "Update company profile for the logged in company")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('COMPANY')")
+    public ResponseEntity<CompanyDto> updateCompanyProfile(@RequestBody CompanyDto companyDto) {
+        CompanyDto updatedCompany = companyService.updateCompanyProfile(companyDto);
+        return ResponseEntity.ok(updatedCompany);
     }
 
     @GetMapping("/{id}")
@@ -73,6 +84,7 @@ public class CompanyController {
     @PutMapping("/{id}")
     @Operation(summary = "Update company", description = "Update company information")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<CompanyDto> updateCompany(@PathVariable Long id, @RequestBody CompanyDto companyDto) {
         CompanyDto updatedCompany = companyService.updateCompany(id, companyDto);
         return ResponseEntity.ok(updatedCompany);
@@ -81,6 +93,7 @@ public class CompanyController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete company", description = "Delete a company from the system")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<Void> deleteCompany(@PathVariable Long id) {
         companyService.deleteCompany(id);
         return ResponseEntity.noContent().build();

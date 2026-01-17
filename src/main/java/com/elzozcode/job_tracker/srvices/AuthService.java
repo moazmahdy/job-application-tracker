@@ -2,74 +2,118 @@ package com.elzozcode.job_tracker.srvices;
 
 import com.elzozcode.job_tracker.dtos.LoginDto;
 import com.elzozcode.job_tracker.dtos.RegisterDto;
+import com.elzozcode.job_tracker.entity.enums.UserType;
 import com.elzozcode.job_tracker.dtos.response.AuthResponse;
+import com.elzozcode.job_tracker.entity.Company;
 import com.elzozcode.job_tracker.entity.User;
 import com.elzozcode.job_tracker.exception.DuplicateResourceException;
 import com.elzozcode.job_tracker.exception.InvalidCredentialsException;
 import com.elzozcode.job_tracker.repositories.AuthRepository;
+import com.elzozcode.job_tracker.repositories.CompanyRepository;
 import com.elzozcode.job_tracker.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final AuthRepository authRepository;
+    private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
+    @Transactional
     public AuthResponse register(RegisterDto request) {
 
-        if (authRepository.existsUsersByUsername(request.getUsername())) {
-            throw new DuplicateResourceException("Username already exists!");
-        }
-
-        if (authRepository.existsUsersByEmail(request.getEmail())) {
+        if (authRepository.existsUsersByEmail(request.getEmail()) ||
+                companyRepository.existsCompanyByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already exists!");
         }
 
-        try {
+        if (request.getType() == UserType.USER) {
+
             User user = User.builder()
-                    .username(request.getUsername())
                     .email(request.getEmail())
                     .password(passwordEncoder.encode(request.getPassword()))
                     .fullName(request.getFullName())
+                    .username(request.getUsername())
                     .build();
 
-            User savedUser = authRepository.save(user);
+            user = authRepository.save(user);
 
-            return AuthResponse.builder()
-                    .id(savedUser.getId())
-                    .username(savedUser.getUsername())
-                    .email(savedUser.getEmail())
-                    .fullName(savedUser.getFullName())
-                    .message("User registered successfully!")
-                    .build();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            String token = jwtUtil.generateUserToken(user);
+
+            return AuthResponse.success(
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    "USER",
+                    token
+            );
         }
+
+        Company company = Company.builder()
+                .name(request.getCompanyName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .build();
+
+        company = companyRepository.save(company);
+
+        String token = jwtUtil.generateCompanyToken(company);
+
+        return AuthResponse.success(
+                company.getId(),
+                company.getEmail(),
+                company.getName(),
+                "COMPANY",
+                token
+        );
     }
 
     public AuthResponse login(LoginDto request) {
 
-        User user = authRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid username or password!"));
+        Optional<User> userOpt = authRepository.findByEmail(request.getEmail());
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new InvalidCredentialsException("Invalid username or password!");
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                throw new InvalidCredentialsException("Invalid email or password");
+            }
+
+            return AuthResponse.success(
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    "USER",
+                    jwtUtil.generateUserToken(user)
+            );
         }
 
-        String token = jwtUtil.generateToken(user.getUsername());
+        Optional<Company> companyOpt = companyRepository.findByEmail(request.getEmail());
 
-        return AuthResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .token(token)
-                .message("Login successful!")
-                .build();
+        if (companyOpt.isEmpty()) {
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
+
+        Company company = companyOpt.get();
+
+        if (!passwordEncoder.matches(request.getPassword(), company.getPassword())) {
+            throw new InvalidCredentialsException("Invalid email or password");
+        }
+
+        return AuthResponse.success(
+                company.getId(),
+                company.getEmail(),
+                company.getName(),
+                "COMPANY",
+                jwtUtil.generateCompanyToken(company)
+        );
     }
 }

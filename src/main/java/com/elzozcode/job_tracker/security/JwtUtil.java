@@ -1,10 +1,11 @@
 package com.elzozcode.job_tracker.security;
 
+import com.elzozcode.job_tracker.entity.Company;
+import com.elzozcode.job_tracker.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -17,51 +18,74 @@ import java.util.function.Function;
 public class JwtUtil {
 
     @Value("${jwt.secret}")
-    private String SECRET_KEY;
+    private String secretKey;
 
     @Value("${jwt.expiration}")
-    private long JWT_EXPIRATION;
+    private long jwtExpiration;
 
-    // Get signing key
     private SecretKey getSignKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
-    // Generate token
-    public String generateToken(String username) {
+    public String generateUserToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, username);
+        claims.put("userId", user.getId());
+        claims.put("role", "ROLE_USER");
+        claims.put("type", "USER");
+        claims.put("companyId", null);
+
+        return createToken(claims, user.getEmail());
     }
 
-    // Create token
+    public String generateCompanyToken(Company company) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", company.getId());
+        claims.put("role", "ROLE_COMPANY");
+        claims.put("type", "COMPANY");
+        claims.put("companyId", company.getId());
+
+        return createToken(claims, company.getEmail());
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .claims(claims)
                 .subject(subject)
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSignKey())
                 .compact();
     }
 
-    // Extract username
-    public String extractUsername(String token) {
+    public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    // Extract expiration
+    public String extractType(String token) {
+        return extractAllClaims(token).get("type", String.class);
+    }
+
+    public String extractRole(String token) {
+        return extractAllClaims(token).get("role", String.class);
+    }
+
+    public Long extractUserId(String token) {
+        return extractAllClaims(token).get("userId", Long.class);
+    }
+
+    public Long extractCompanyId(String token) {
+        return extractAllClaims(token).get("companyId", Long.class);
+    }
+
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    // Extract claim
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+    public <T> T extractClaim(String token, Function<Claims, T> resolver) {
+        return resolver.apply(extractAllClaims(token));
     }
 
-    // Extract all claims
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSignKey())
                 .build()
@@ -69,14 +93,15 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    // Check if expired
-    private Boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    // Validate token
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    public boolean validateToken(String token) {
+        try {
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

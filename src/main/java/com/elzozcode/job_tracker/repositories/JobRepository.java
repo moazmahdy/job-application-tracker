@@ -13,7 +13,9 @@ import java.util.Optional;
 @Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
 
-    List<Job> findByCompanyId(Long companyId);
+    List<Job> findByCompany_Id(Long companyId);
+
+    List<Job> findByCompany_IdAndIsActiveTrue(Long companyId);
 
     @Query("SELECT j FROM Job j WHERE j.company.id = :companyId AND j.isActive = true")
     List<Job> findActiveJobsByCompanyId(@Param("companyId") Long companyId);
@@ -26,8 +28,6 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     @Query("SELECT j FROM Job j WHERE j.isActive = true AND j.deadlineDate >= :currentDate ORDER BY j.deadlineDate ASC")
     List<Job> findUpcomingDeadlineJobs(@Param("currentDate") LocalDate currentDate);
-
-    List<Job> findByCompanyIdAndIsActiveTrue(Long companyId);
 
     @Query("SELECT COUNT(j) FROM Job j WHERE j.company.id = :companyId AND j.isActive = true")
     Long countActiveJobsByCompanyId(@Param("companyId") Long companyId);

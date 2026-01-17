@@ -20,7 +20,6 @@ class AuthControllerIntegrationTest {
     @Test
     void register_Success() {
         RegisterDto registerDto = new RegisterDto();
-        registerDto.setUsername("integrationtest");
         registerDto.setEmail("integration@test.com");
         registerDto.setPassword("password123");
         registerDto.setFullName("Integration Test");
@@ -40,7 +39,6 @@ class AuthControllerIntegrationTest {
     @Test
     void register_DuplicateUsername_ReturnsConflict() {
         RegisterDto registerDto = new RegisterDto();
-        registerDto.setUsername("duplicate");
         registerDto.setEmail("first@test.com");
         registerDto.setPassword("password123");
         registerDto.setFullName("First User");

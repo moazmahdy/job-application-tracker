@@ -7,13 +7,18 @@ import com.elzozcode.job_tracker.entity.JobApplication;
 import com.elzozcode.job_tracker.entity.User;
 import com.elzozcode.job_tracker.entity.Job;
 import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
+import com.elzozcode.job_tracker.exception.UnauthorizedException;
+import com.elzozcode.job_tracker.repositories.AuthRepository;
 import com.elzozcode.job_tracker.repositories.JobApplicationRepository;
 import com.elzozcode.job_tracker.repositories.JobRepository;
+import com.elzozcode.job_tracker.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.stream.Collectors;
 import java.util.List;
 
 @Service
@@ -23,11 +28,13 @@ public class JobApplicationService {
 
     private final JobApplicationRepository jobApplicationRepository;
     private final JobRepository jobRepository;
+    private final AuthRepository authRepository;
 
-    /**
-     * Create application from a posted job
-     */
-    public JobApplicationResponse createApplicationFromJob(CreateJobApplicationDto request, User currentUser) {
+    public JobApplicationResponse createApplicationFromJob(CreateJobApplicationDto request) {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        User currentUser = authRepository.findById(userPrincipal.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         Job job = jobRepository.findById(request.getJobId())
                 .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + request.getJobId()));
 
@@ -38,7 +45,7 @@ public class JobApplicationService {
                 .jobTitle(job.getJobTitle())
                 .jobUrl(job.getJobUrl())
                 .applicationDate(LocalDate.now())
-                .status(request.getStatus() != null ? request.getStatus() : job.getJobTitle() != null ? null : null)
+                .status(request.getStatus())
                 .location(job.getLocation())
                 .jobType(job.getJobType())
                 .workMode(job.getWorkMode())
@@ -51,7 +58,11 @@ public class JobApplicationService {
         return mapToResponse(saved);
     }
 
-    public JobApplicationResponse createJobApplication(JobApplicationDto request, User currentUser) {
+    public JobApplicationResponse createJobApplication(JobApplicationDto request) {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        User currentUser = authRepository.findById(userPrincipal.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         JobApplication jobApplication =
                 buildOrUpdateJobApplication(null, request, currentUser);
 
@@ -59,28 +70,51 @@ public class JobApplicationService {
         return mapToResponse(saved);
     }
 
-    public List<JobApplicationResponse> getAllByUserId(User currentUser) {
+    public List<JobApplicationResponse> getAllByUserId() {
+        UserPrincipal userPrincipal = getUserPrincipal();
         return jobApplicationRepository
-                .findAllByUserId(currentUser.getId())
+                .findAllByUserId(userPrincipal.getUserId())
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
-    public JobApplicationResponse getJobApplicationById(Long id, User currentUser) {
-        return mapToResponse(jobApplicationRepository.findByIdAndUserId(id, currentUser.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Job application not found")));
+    public JobApplicationResponse getJobApplicationById(Long id) {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        JobApplication jobApplication = jobApplicationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Job application not found"));
+        if (!jobApplication.getUser().getId().equals(userPrincipal.getUserId())) {
+            throw new UnauthorizedException("You are not authorized to view this job application.");
+        }
+        return mapToResponse(jobApplication);
     }
 
+    public List<JobApplicationResponse> getJobApplicationsByJobId(Long jobId) {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new ResourceNotFoundException("Job not found with id: " + jobId));
 
-    public JobApplicationResponse update(
-            long id,
-            JobApplicationDto request,
-            User currentUser
-    ) {
+        if (!job.getCompany().getId().equals(userPrincipal.getCompanyId())) {
+            throw new UnauthorizedException("You are not authorized to view applications for this job.");
+        }
+
+        return jobApplicationRepository.findAllByJobId(jobId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public JobApplicationResponse update(long id, JobApplicationDto request) {
+        UserPrincipal userPrincipal = getUserPrincipal();
+        User currentUser = authRepository.findById(userPrincipal.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         JobApplication existingJob = jobApplicationRepository
-                .findByIdAndUserId(id, currentUser.getId())
+                .findById(id)
                 .orElseThrow(() -> new RuntimeException("Job application not found"));
+
+        if (!existingJob.getUser().getId().equals(userPrincipal.getUserId())) {
+            throw new UnauthorizedException("You are not authorized to update this job application.");
+        }
 
         JobApplication updated =
                 buildOrUpdateJobApplication(existingJob, request, currentUser);
@@ -89,13 +123,21 @@ public class JobApplicationService {
         return mapToResponse(saved);
     }
 
-    public void delete(long id, User currentUser) {
+    public void delete(long id) {
+        UserPrincipal userPrincipal = getUserPrincipal();
         JobApplication jobApplication =
-                jobApplicationRepository.findByIdAndUserId(id, currentUser.getId())
+                jobApplicationRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Job application not found"));
+
+        if (!jobApplication.getUser().getId().equals(userPrincipal.getUserId())) {
+            throw new UnauthorizedException("You are not authorized to delete this job application.");
+        }
         jobApplicationRepository.delete(jobApplication);
     }
 
+    private UserPrincipal getUserPrincipal() {
+        return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
 
     private JobApplication buildOrUpdateJobApplication(
             JobApplication job,

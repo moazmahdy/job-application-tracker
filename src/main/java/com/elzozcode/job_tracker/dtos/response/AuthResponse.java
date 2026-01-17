@@ -8,10 +8,28 @@ import lombok.Data;
 @AllArgsConstructor
 @Builder
 public class AuthResponse {
+
     private Long id;
-    private String username;
     private String email;
-    private String fullName;
+    private String name;
+    private String type;
     private String token;
     private String message;
+
+    public static AuthResponse success(
+            Long id,
+            String email,
+            String name,
+            String type,
+            String token
+    ) {
+        return AuthResponse.builder()
+                .id(id)
+                .email(email)
+                .name(name)
+                .type(type)
+                .token(token)
+                .message("Success")
+                .build();
+    }
 }

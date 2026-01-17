@@ -1,203 +1,93 @@
 package com.elzozcode.job_tracker.srvices;
 
-import com.elzozcode.job_tracker.dtos.JobApplicationDto;
-import com.elzozcode.job_tracker.dtos.response.JobApplicationResponse;
+import com.elzozcode.job_tracker.entity.Company;
+import com.elzozcode.job_tracker.entity.Job;
 import com.elzozcode.job_tracker.entity.JobApplication;
 import com.elzozcode.job_tracker.entity.User;
-import com.elzozcode.job_tracker.entity.enums.ApplicationStatus;
-import com.elzozcode.job_tracker.entity.enums.JobType;
-import com.elzozcode.job_tracker.entity.enums.WorkMode;
-import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
+import com.elzozcode.job_tracker.exception.UnauthorizedException;
 import com.elzozcode.job_tracker.repositories.JobApplicationRepository;
+import com.elzozcode.job_tracker.repositories.JobRepository;
+import com.elzozcode.job_tracker.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
-class JobApplicationServiceTest {
+public class JobApplicationServiceTest {
 
     @Mock
     private JobApplicationRepository jobApplicationRepository;
 
+    @Mock
+    private JobRepository jobRepository;
+
     @InjectMocks
     private JobApplicationService jobApplicationService;
 
-    private User testUser;
-    private JobApplicationDto jobApplicationDto;
-    private JobApplication testJobApplication;
+    private UserPrincipal userPrincipal;
+    private UserPrincipal companyPrincipal;
+    private JobApplication jobApplication;
+    private Job job;
 
     @BeforeEach
     void setUp() {
-        testUser = User.builder()
-                .id(1L)
-                .username("testuser")
-                .email("test@example.com")
-                .fullName("Test User")
-                .build();
+        userPrincipal = new UserPrincipal(1L, "testuser", "ROLE_USER", null);
+        companyPrincipal = new UserPrincipal(2L, "companyuser", "ROLE_COMPANY", 1L);
 
-        jobApplicationDto = new JobApplicationDto();
-        jobApplicationDto.setCompanyName("Google");
-        jobApplicationDto.setJobTitle("Backend Developer");
-        jobApplicationDto.setJobUrl("https://careers.google.com/jobs/123");
-        jobApplicationDto.setApplicationDate(LocalDate.of(2026, 1, 8));
-        jobApplicationDto.setStatus(ApplicationStatus.APPLIED);
-        jobApplicationDto.setLocation("Cairo, Egypt");
-        jobApplicationDto.setJobType(JobType.FULL_TIME);
-        jobApplicationDto.setWorkMode(WorkMode.HYBRID);
-        jobApplicationDto.setSalaryRange("50K-70K");
+        User user = new User();
+        user.setId(1L);
 
-        testJobApplication = JobApplication.builder()
-                .id(1L)
-                .user(testUser)
-                .companyName("Google")
-                .jobTitle("Backend Developer")
-                .jobUrl("https://careers.google.com/jobs/123")
-                .applicationDate(LocalDate.of(2026, 1, 8))
-                .status(ApplicationStatus.APPLIED)
-                .location("Cairo, Egypt")
-                .jobType(JobType.FULL_TIME)
-                .workMode(WorkMode.HYBRID)
-                .salaryRange("50K-70K")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        Company company = new Company();
+        company.setId(1L);
+
+        job = new Job();
+        job.setCompany(company);
+
+        jobApplication = new JobApplication();
+        jobApplication.setUser(user);
+        jobApplication.setJob(job);
+
+
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        when(authentication.getPrincipal()).thenReturn(userPrincipal);
     }
 
     @Test
-    void createJobApplication_Success() {
-        // Arrange
-        when(jobApplicationRepository.save(any(JobApplication.class))).thenReturn(testJobApplication);
+    void getJobApplicationById_withDifferentUserId_shouldThrowUnauthorizedException() {
+        userPrincipal = new UserPrincipal(2L, "anotheruser", "ROLE_USER", null);
+        Authentication authentication = mock(Authentication.class);
+        when(SecurityContextHolder.getContext().getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(userPrincipal);
 
-        // Act
-        JobApplicationResponse response = jobApplicationService.createJobApplication(jobApplicationDto, testUser);
+        when(jobApplicationRepository.findById(1L)).thenReturn(Optional.of(jobApplication));
 
-        // Assert
-        assertNotNull(response);
-        assertEquals("Google", response.getCompanyName());
-        assertEquals("Backend Developer", response.getJobTitle());
-        assertEquals(ApplicationStatus.APPLIED, response.getStatus());
-        verify(jobApplicationRepository, times(1)).save(any(JobApplication.class));
+        assertThrows(UnauthorizedException.class, () -> jobApplicationService.getJobApplicationById(1L));
     }
 
     @Test
-    void getAllByUserId_Success() {
-        // Arrange
-        when(jobApplicationRepository.findAllByUserId(1L)).thenReturn(List.of(testJobApplication));
+    void getJobApplicationsByJobId_withDifferentCompanyId_shouldThrowUnauthorizedException() {
+        companyPrincipal = new UserPrincipal(2L, "anothercompany", "ROLE_COMPANY", 2L);
+        Authentication authentication = mock(Authentication.class);
+        when(SecurityContextHolder.getContext().getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(companyPrincipal);
 
-        // Act
-        List<JobApplicationResponse> responses = jobApplicationService.getAllByUserId(testUser);
+        when(jobRepository.findById(1L)).thenReturn(Optional.of(job));
 
-        // Assert
-        assertNotNull(responses);
-        assertFalse(responses.isEmpty());
-        assertEquals(1, responses.size());
-        assertEquals("Google", responses.get(0).getCompanyName());
-        verify(jobApplicationRepository, times(1)).findAllByUserId(1L);
-    }
-
-    @Test
-    void getAllByUserId_Empty() {
-        // Arrange
-        when(jobApplicationRepository.findAllByUserId(1L)).thenReturn(List.of());
-
-        // Act
-        List<JobApplicationResponse> responses = jobApplicationService.getAllByUserId(testUser);
-
-        // Assert
-        assertNotNull(responses);
-        assertTrue(responses.isEmpty());
-    }
-
-    @Test
-    void getJobApplicationById_Success() {
-        // Arrange
-        when(jobApplicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testJobApplication));
-
-        // Act
-        JobApplicationResponse response = jobApplicationService.getJobApplicationById(1L, testUser);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("Google", response.getCompanyName());
-        verify(jobApplicationRepository, times(1)).findByIdAndUserId(1L, 1L);
-    }
-
-    @Test
-    void getJobApplicationById_NotFound() {
-        // Arrange
-        when(jobApplicationRepository.findByIdAndUserId(999L, 1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(ResourceNotFoundException.class, () ->
-            jobApplicationService.getJobApplicationById(999L, testUser)
-        );
-    }
-
-    @Test
-    void update_Success() {
-        // Arrange
-        JobApplicationDto updateDto = new JobApplicationDto();
-        updateDto.setCompanyName("Microsoft");
-        updateDto.setJobTitle("Senior Backend Developer");
-        updateDto.setJobUrl("https://careers.microsoft.com/jobs/456");
-        updateDto.setApplicationDate(LocalDate.of(2026, 1, 9));
-        updateDto.setStatus(ApplicationStatus.INTERVIEW);
-        updateDto.setLocation("New York, USA");
-        updateDto.setJobType(JobType.FULL_TIME);
-        updateDto.setWorkMode(WorkMode.ONSITE);
-        updateDto.setSalaryRange("80K-100K");
-
-        JobApplication updatedJobApplication = JobApplication.builder()
-                .id(1L)
-                .user(testUser)
-                .companyName("Microsoft")
-                .jobTitle("Senior Backend Developer")
-                .build();
-
-        when(jobApplicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testJobApplication));
-        when(jobApplicationRepository.save(any(JobApplication.class))).thenReturn(updatedJobApplication);
-
-        // Act
-        JobApplicationResponse response = jobApplicationService.update(1L, updateDto, testUser);
-
-        // Assert
-        assertNotNull(response);
-        assertEquals("Microsoft", response.getCompanyName());
-        verify(jobApplicationRepository, times(1)).save(any(JobApplication.class));
-    }
-
-    @Test
-    void delete_Success() {
-        // Arrange
-        when(jobApplicationRepository.findByIdAndUserId(1L, 1L)).thenReturn(Optional.of(testJobApplication));
-
-        // Act
-        jobApplicationService.delete(1L, testUser);
-
-        // Assert
-        verify(jobApplicationRepository, times(1)).delete(testJobApplication);
-    }
-
-    @Test
-    void delete_NotFound() {
-        // Arrange
-        when(jobApplicationRepository.findByIdAndUserId(999L, 1L)).thenReturn(Optional.empty());
-
-        // Act & Assert
-        assertThrows(RuntimeException.class, () -> jobApplicationService.delete(999L, testUser));
-        verify(jobApplicationRepository, never()).delete(any(JobApplication.class));
+        assertThrows(UnauthorizedException.class, () -> jobApplicationService.getJobApplicationsByJobId(1L));
     }
 }
-
