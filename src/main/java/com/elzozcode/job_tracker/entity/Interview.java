@@ -10,9 +10,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
-@Data
 @Entity
 @Table(name = "interviews")
+@Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

@@ -11,7 +11,8 @@ import java.util.Set;
 
 @Entity
 @Table(name = "companies")
-@Data
+@Setter
+@Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

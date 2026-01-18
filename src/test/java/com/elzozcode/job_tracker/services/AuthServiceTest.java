@@ -1,10 +1,10 @@
-package com.elzozcode.job_tracker.srvices;
+package com.elzozcode.job_tracker.services;
 
 import com.elzozcode.job_tracker.dtos.RegisterDto;
 import com.elzozcode.job_tracker.entity.enums.UserType;
 import com.elzozcode.job_tracker.entity.Company;
 import com.elzozcode.job_tracker.entity.User;
-import com.elzozcode.job_tracker.repositories.AuthRepository;
+import com.elzozcode.job_tracker.repositories.UserRepository;
 import com.elzozcode.job_tracker.repositories.CompanyRepository;
 import com.elzozcode.job_tracker.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 class AuthServiceTest {
 
     @Mock
-    private AuthRepository userRepository;
+    private UserRepository userRepository;
 
     @Mock
     private CompanyRepository companyRepository;

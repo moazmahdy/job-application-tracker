@@ -1,4 +1,4 @@
-package com.elzozcode.job_tracker.srvices;
+package com.elzozcode.job_tracker.services;
 
 import com.elzozcode.job_tracker.dtos.LoginDto;
 import com.elzozcode.job_tracker.dtos.RegisterDto;
@@ -8,7 +8,7 @@ import com.elzozcode.job_tracker.entity.Company;
 import com.elzozcode.job_tracker.entity.User;
 import com.elzozcode.job_tracker.exception.DuplicateResourceException;
 import com.elzozcode.job_tracker.exception.InvalidCredentialsException;
-import com.elzozcode.job_tracker.repositories.AuthRepository;
+import com.elzozcode.job_tracker.repositories.UserRepository;
 import com.elzozcode.job_tracker.repositories.CompanyRepository;
 import com.elzozcode.job_tracker.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final AuthRepository authRepository;
+    private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -30,7 +30,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterDto request) {
 
-        if (authRepository.existsUsersByEmail(request.getEmail()) ||
+        if (userRepository.existsUsersByEmail(request.getEmail()) ||
                 companyRepository.existsCompanyByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already exists!");
         }
@@ -44,7 +44,7 @@ public class AuthService {
                     .username(request.getUsername())
                     .build();
 
-            user = authRepository.save(user);
+            user = userRepository.save(user);
 
             String token = jwtUtil.generateUserToken(user);
 
@@ -52,7 +52,7 @@ public class AuthService {
                     user.getId(),
                     user.getEmail(),
                     user.getFullName(),
-                    "USER",
+                    UserType.USER.toString().toUpperCase(),
                     token
             );
         }
@@ -71,14 +71,14 @@ public class AuthService {
                 company.getId(),
                 company.getEmail(),
                 company.getName(),
-                "COMPANY",
+                UserType.COMPANY.toString().toUpperCase(),
                 token
         );
     }
 
     public AuthResponse login(LoginDto request) {
 
-        Optional<User> userOpt = authRepository.findByEmail(request.getEmail());
+        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();

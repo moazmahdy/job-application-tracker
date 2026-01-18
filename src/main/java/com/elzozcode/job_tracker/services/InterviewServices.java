@@ -1,4 +1,4 @@
-package com.elzozcode.job_tracker.srvices;
+package com.elzozcode.job_tracker.services;
 
 import com.elzozcode.job_tracker.dtos.InterviewDto;
 import com.elzozcode.job_tracker.dtos.ScheduleInterviewDto;
@@ -18,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

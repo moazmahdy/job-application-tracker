@@ -17,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // مهم جداً عشان @PreAuthorize تشتغل
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 

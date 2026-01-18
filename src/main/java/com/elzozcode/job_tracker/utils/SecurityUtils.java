@@ -1,5 +1,7 @@
 package com.elzozcode.job_tracker.utils;
 
+import com.elzozcode.job_tracker.exception.InvalidCredentialsException;
+import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
 import com.elzozcode.job_tracker.security.UserPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,7 +12,8 @@ public class SecurityUtils {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("No authenticated user found");
+            throw new ResourceNotFoundException(
+                    "No authenticated user found");
         }
 
         Object principal = authentication.getPrincipal();
@@ -19,7 +22,7 @@ public class SecurityUtils {
             return (UserPrincipal) principal;
         }
 
-        throw new RuntimeException("Invalid principal type");
+        throw new InvalidCredentialsException("Invalid principal type");
     }
 
     public static Long getCurrentUserId() {
@@ -30,7 +33,7 @@ public class SecurityUtils {
         UserPrincipal user = getCurrentUser();
 
         if (user.getCompanyId() == null) {
-            throw new RuntimeException("Current user is not a company");
+            throw new InvalidCredentialsException("Current user is not a company");
         }
 
         return user.getCompanyId();

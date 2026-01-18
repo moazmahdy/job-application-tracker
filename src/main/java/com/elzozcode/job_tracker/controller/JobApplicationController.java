@@ -3,7 +3,7 @@ package com.elzozcode.job_tracker.controller;
 import com.elzozcode.job_tracker.dtos.CreateJobApplicationDto;
 import com.elzozcode.job_tracker.dtos.JobApplicationDto;
 import com.elzozcode.job_tracker.dtos.response.JobApplicationResponse;
-import com.elzozcode.job_tracker.srvices.JobApplicationService;
+import com.elzozcode.job_tracker.services.JobApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

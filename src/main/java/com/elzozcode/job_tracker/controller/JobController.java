@@ -1,7 +1,7 @@
 package com.elzozcode.job_tracker.controller;
 
 import com.elzozcode.job_tracker.dtos.JobDto;
-import com.elzozcode.job_tracker.srvices.JobService;
+import com.elzozcode.job_tracker.services.JobService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -43,24 +43,6 @@ public class JobController {
     @GetMapping("/{jobId}")
     public ResponseEntity<JobDto> getJobById(@PathVariable Long jobId) {
         return ResponseEntity.ok(jobService.getJobById(jobId));
-    }
-
-    @Operation(summary = "Search jobs", description = "Search for jobs by keyword")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Search completed successfully")
-    })
-    @GetMapping("/search")
-    public ResponseEntity<List<JobDto>> searchJobs(@RequestParam String keyword) {
-        return ResponseEntity.ok(jobService.searchJobs(keyword));
-    }
-
-    @Operation(summary = "Get jobs with upcoming deadlines", description = "Get jobs that have deadlines approaching")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully")
-    })
-    @GetMapping("/upcoming-deadlines")
-    public ResponseEntity<List<JobDto>> getJobsWithUpcomingDeadlines() {
-        return ResponseEntity.ok(jobService.getJobsWithUpcomingDeadlines());
     }
 
     @Operation(
@@ -116,47 +98,10 @@ public class JobController {
             @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Only companies can access this endpoint")
     })
-    @GetMapping("/my-jobs")
+    @GetMapping("/company/mjobs")
     @PreAuthorize("hasRole('COMPANY')")
     public ResponseEntity<List<JobDto>> getMyCompanyJobs() {
         return ResponseEntity.ok(jobService.getMyCompanyJobs());
-    }
-
-    @Operation(
-            summary = "Update job",
-            description = "Update an existing job. Only the company that created the job can update it.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Job updated successfully"),
-            @ApiResponse(responseCode = "403", description = "Not authorized to update this job"),
-            @ApiResponse(responseCode = "404", description = "Job not found")
-    })
-    @PutMapping("/{jobId}")
-    @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<JobDto> updateJob(
-            @PathVariable Long jobId,
-            @Valid @RequestBody JobDto jobDto
-    ) {
-        JobDto updatedJob = jobService.updateJob(jobId, jobDto);
-        return ResponseEntity.ok(updatedJob);
-    }
-
-    @Operation(
-            summary = "Deactivate job",
-            description = "Deactivate a job listing. Only the company that created the job can deactivate it.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Job deactivated successfully"),
-            @ApiResponse(responseCode = "403", description = "Not authorized to deactivate this job"),
-            @ApiResponse(responseCode = "404", description = "Job not found")
-    })
-    @PatchMapping("/{jobId}/deactivate")
-    @PreAuthorize("hasRole('COMPANY')")
-    public ResponseEntity<Void> deactivateJob(@PathVariable Long jobId) {
-        jobService.deactivateJob(jobId);
-        return ResponseEntity.noContent().build();
     }
 
     @Operation(

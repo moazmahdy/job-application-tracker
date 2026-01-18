@@ -137,7 +137,7 @@ public class JobApplicationService {
     }
 
     private UserPrincipal getUserPrincipal() {
-        return SecurityUtils.getCurrentUserPrincipal();
+        return SecurityUtils.getCurrentUser();
     }
 
     private JobApplication buildOrUpdateJobApplication(

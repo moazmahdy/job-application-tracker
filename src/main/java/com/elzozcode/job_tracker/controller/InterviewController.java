@@ -3,7 +3,7 @@ package com.elzozcode.job_tracker.controller;
 import com.elzozcode.job_tracker.dtos.InterviewDto;
 import com.elzozcode.job_tracker.dtos.ScheduleInterviewDto;
 import com.elzozcode.job_tracker.dtos.response.InterviewResponse;
-import com.elzozcode.job_tracker.srvices.InterviewServices;
+import com.elzozcode.job_tracker.services.InterviewServices;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;

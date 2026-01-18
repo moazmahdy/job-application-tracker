@@ -113,23 +113,14 @@ Access the application:
 - `GET /api/companies/profile` - Get company profile for the logged in company
 - `PUT /api/companies/profile` - Update company profile for the logged in company
 - `GET /api/companies/{id}` - Get company by ID
-- `GET /api/companies/name/{name}` - Get company by name
 - `GET /api/companies` - Get all companies
-- `GET /api/companies/search` - Search companies by name, industry, or location
-- `GET /api/companies/industry/{industry}` - Get companies by industry
-- `GET /api/companies/industries` - Get all available industries
-- `PUT /api/companies/{id}` - Update company
 - `DELETE /api/companies/{id}` - Delete a company from the system
 
 ### Jobs
 - `GET /jobs` - Get all active jobs
 - `GET /jobs/{jobId}` - Get job by ID
-- `GET /jobs/search` - Search for jobs by keyword
-- `GET /jobs/upcoming-deadlines` - Get jobs with upcoming deadlines
 - `POST /jobs` - Create a new job listing
-- `GET /jobs/my-jobs` - Get all jobs posted by the authenticated company
-- `PUT /jobs/{jobId}` - Update an existing job
-- `PATCH /jobs/{jobId}/deactivate` - Deactivate a job listing
+- `GET /jobs/company/jobs` - Get all jobs posted by the authenticated company
 - `DELETE /jobs/{jobId}` - Permanently delete a job
 
 ### Job Applications

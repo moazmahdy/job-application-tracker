@@ -1,4 +1,4 @@
-package com.elzozcode.job_tracker.srvices;
+package com.elzozcode.job_tracker.services;
 
 import com.elzozcode.job_tracker.dtos.CompanyDto;
 import com.elzozcode.job_tracker.entity.Company;
