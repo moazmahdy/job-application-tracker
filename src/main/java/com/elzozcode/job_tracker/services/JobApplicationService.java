@@ -1,4 +1,4 @@
-package com.elzozcode.job_tracker.srvices;
+package com.elzozcode.job_tracker.services;
 
 import com.elzozcode.job_tracker.dtos.CreateJobApplicationDto;
 import com.elzozcode.job_tracker.dtos.JobApplicationDto;
@@ -6,14 +6,15 @@ import com.elzozcode.job_tracker.dtos.response.JobApplicationResponse;
 import com.elzozcode.job_tracker.entity.JobApplication;
 import com.elzozcode.job_tracker.entity.User;
 import com.elzozcode.job_tracker.entity.Job;
+import com.elzozcode.job_tracker.exception.InvalidCredentialsException;
 import com.elzozcode.job_tracker.exception.ResourceNotFoundException;
 import com.elzozcode.job_tracker.exception.UnauthorizedException;
-import com.elzozcode.job_tracker.repositories.AuthRepository;
+import com.elzozcode.job_tracker.repositories.UserRepository;
 import com.elzozcode.job_tracker.repositories.JobApplicationRepository;
 import com.elzozcode.job_tracker.repositories.JobRepository;
 import com.elzozcode.job_tracker.security.UserPrincipal;
+import com.elzozcode.job_tracker.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +29,11 @@ public class JobApplicationService {
 
     private final JobApplicationRepository jobApplicationRepository;
     private final JobRepository jobRepository;
-    private final AuthRepository authRepository;
+    private final UserRepository userRepository;
 
     public JobApplicationResponse createApplicationFromJob(CreateJobApplicationDto request) {
         UserPrincipal userPrincipal = getUserPrincipal();
-        User currentUser = authRepository.findById(userPrincipal.getUserId())
+        User currentUser = userRepository.findById(userPrincipal.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Job job = jobRepository.findById(request.getJobId())
@@ -60,7 +61,7 @@ public class JobApplicationService {
 
     public JobApplicationResponse createJobApplication(JobApplicationDto request) {
         UserPrincipal userPrincipal = getUserPrincipal();
-        User currentUser = authRepository.findById(userPrincipal.getUserId())
+        User currentUser = userRepository.findById(userPrincipal.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         JobApplication jobApplication =
@@ -106,11 +107,11 @@ public class JobApplicationService {
 
     public JobApplicationResponse update(long id, JobApplicationDto request) {
         UserPrincipal userPrincipal = getUserPrincipal();
-        User currentUser = authRepository.findById(userPrincipal.getUserId())
+        User currentUser = userRepository.findById(userPrincipal.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         JobApplication existingJob = jobApplicationRepository
                 .findById(id)
-                .orElseThrow(() -> new RuntimeException("Job application not found"));
+                .orElseThrow(() -> new InvalidCredentialsException("Job application not found"));
 
         if (!existingJob.getUser().getId().equals(userPrincipal.getUserId())) {
             throw new UnauthorizedException("You are not authorized to update this job application.");
@@ -127,7 +128,7 @@ public class JobApplicationService {
         UserPrincipal userPrincipal = getUserPrincipal();
         JobApplication jobApplication =
                 jobApplicationRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Job application not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Job application not found"));
 
         if (!jobApplication.getUser().getId().equals(userPrincipal.getUserId())) {
             throw new UnauthorizedException("You are not authorized to delete this job application.");
@@ -136,7 +137,7 @@ public class JobApplicationService {
     }
 
     private UserPrincipal getUserPrincipal() {
-        return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return SecurityUtils.getCurrentUserPrincipal();
     }
 
     private JobApplication buildOrUpdateJobApplication(
